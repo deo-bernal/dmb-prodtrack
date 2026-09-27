@@ -1,0 +1,3 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Wire contracts shared by Server, ShopFloor and ApiClient. No dependencies. Enums travel as strings. -->
+</Project>
