@@ -20,6 +20,11 @@ internal sealed class ReleaseWorkOrderHandler(IAppDbContext db, TimeProvider tim
             return WorkOrderErrors.NotFound(command.Id);
         }
 
+        if (!ConcurrencyErrors.Matches(workOrder.RowVersion, command.ExpectedVersion))
+        {
+            return ConcurrencyErrors.StaleVersion;
+        }
+
         var routing = await db.Routings
             .Include(r => r.Steps)
             .Where(r => r.ProductType == workOrder.ProductType && r.IsCurrent)

@@ -15,6 +15,11 @@ internal sealed class UpdateWorkOrderHandler(IAppDbContext db) : ICommandHandler
             return WorkOrderErrors.NotFound(command.Id);
         }
 
+        if (!ConcurrencyErrors.Matches(workOrder.RowVersion, command.ExpectedVersion))
+        {
+            return ConcurrencyErrors.StaleVersion;
+        }
+
         var result = workOrder.UpdatePlanning(command.Quantity, command.DueDate, command.Priority, command.CustomerName, command.Legend);
         if (result.IsFailure)
         {

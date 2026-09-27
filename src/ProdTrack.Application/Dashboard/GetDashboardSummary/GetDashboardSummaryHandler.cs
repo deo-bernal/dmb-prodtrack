@@ -46,6 +46,18 @@ internal sealed class GetDashboardSummaryHandler(IAppDbContext db, IPlantClock c
                 CountFor(s.Id, OperationStatus.Pending)))
             .ToList();
 
-        return new DashboardSummaryModel(byStatus, lateCount, wip);
+        // "Today" is the plant-local calendar day (Plant:TimeZone), converted to a UTC window.
+        var startOfDay = new DateTimeOffset(today.ToDateTime(TimeOnly.MinValue), clock.ToPlantTime(clock.UtcNow).Offset).ToUniversalTime();
+        var endOfDay = startOfDay.AddDays(1);
+        var completedToday = await db.WorkOrders.AsNoTracking()
+            .CountAsync(w => w.CompletedAtUtc >= startOfDay && w.CompletedAtUtc < endOfDay, cancellationToken);
+        var scrapToday = await db.ScrapRecords.AsNoTracking()
+            .Where(s => s.OccurredAtUtc >= startOfDay && s.OccurredAtUtc < endOfDay)
+            .SumAsync(s => (int?)s.Quantity, cancellationToken) ?? 0;
+        var goodToday = await db.Operations.AsNoTracking()
+            .Where(o => o.CompletedAtUtc >= startOfDay && o.CompletedAtUtc < endOfDay)
+            .SumAsync(o => (int?)o.GoodQuantity, cancellationToken) ?? 0;
+
+        return new DashboardSummaryModel(byStatus, lateCount, wip, completedToday, scrapToday, goodToday);
     }
 }

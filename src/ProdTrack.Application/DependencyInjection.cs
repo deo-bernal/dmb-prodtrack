@@ -25,7 +25,8 @@ public static class DependencyInjection
 
         services.AddValidatorsFromAssembly(assembly, ServiceLifetime.Scoped, includeInternalTypes: true);
 
-        // Order: authorization runs first (outermost), then validation, then the handler.
+        // Order: authorization runs first (outermost), then validation, then concurrency translation, then the handler.
+        services.Decorate(typeof(ICommandHandler<,>), typeof(ConcurrencyCommandDecorator<,>));
         services.Decorate(typeof(ICommandHandler<,>), typeof(ValidationCommandDecorator<,>));
         services.Decorate(typeof(ICommandHandler<,>), typeof(AuthorizationCommandDecorator<,>));
         services.Decorate(typeof(IQueryHandler<,>), typeof(AuthorizationQueryDecorator<,>));
