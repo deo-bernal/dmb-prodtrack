@@ -1,0 +1,378 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><title>User Guide</title>
+<style>@page { size: A4; margin: 22mm 18mm 20mm 18mm;
+  @top-left { content: "DMB ProdTrack"; font: 8pt "DejaVu Sans", sans-serif; color: #6b7280; }
+  @top-right { content: "User Guide"; font: 8pt "DejaVu Sans", sans-serif; color: #6b7280; }
+  @bottom-right { content: "Page " counter(page) " of " counter(pages); font: 8pt "DejaVu Sans", sans-serif; color: #6b7280; }
+  @bottom-left { content: "Version 1.0 - 27 September 2026"; font: 8pt "DejaVu Sans", sans-serif; color: #6b7280; } }
+@page :first { @top-left { content: none; } @top-right { content: none; } @bottom-right { content: none; } @bottom-left { content: none; } }
+html { font: 10pt/1.45 "DejaVu Sans", Arial, sans-serif; color: #1f2937; }
+h1, h2, h3 { color: #1e3a8a; line-height: 1.2; }
+main h1 { page-break-before: always; font-size: 19pt; border-bottom: 2px solid #1e3a8a; padding-bottom: 4pt; margin-top: 0; }
+h2 { font-size: 13.5pt; margin-top: 16pt; page-break-after: avoid; }
+h3 { font-size: 11pt; margin-top: 12pt; page-break-after: avoid; }
+p, li { orphans: 3; widows: 3; }
+a { color: #1d4ed8; text-decoration: none; }
+code { font: 8.6pt "DejaVu Sans Mono", monospace; background: #f3f4f6; padding: 0 2pt; border-radius: 2pt; }
+pre { background: #f3f4f6; border: 1px solid #e5e7eb; padding: 6pt 8pt; font-size: 8.4pt; white-space: pre-wrap; page-break-inside: avoid; }
+pre code { background: none; padding: 0; }
+table { border-collapse: collapse; width: 100%; margin: 6pt 0 10pt; font-size: 8.8pt; page-break-inside: auto; }
+th, td { border: 1px solid #d1d5db; padding: 3pt 5pt; vertical-align: top; text-align: left; }
+th { background: #e0e7ff; color: #1e3a8a; }
+tr { page-break-inside: avoid; }
+figure { margin: 8pt 0 12pt; text-align: center; page-break-inside: avoid; }
+figure img { max-width: 100%; max-height: 215mm; border: 1px solid #d1d5db; }
+figcaption { font-size: 8.5pt; color: #4b5563; margin-top: 3pt; font-style: italic; }
+blockquote { border-left: 3px solid #93c5fd; background: #eff6ff; margin: 8pt 0; padding: 4pt 10pt; }
+.title-page { page: first; height: 240mm; display: flex; flex-direction: column; justify-content: center; page-break-after: always; }
+.brand { font-size: 14pt; letter-spacing: 2pt; text-transform: uppercase; color: #6b7280; }
+.doc-title { display: block; font-size: 30pt; font-weight: bold; color: #1e3a8a; margin: 10pt 0 6pt; }
+.subtitle { font-size: 13pt; color: #374151; margin-bottom: 26pt; }
+.meta { width: 70%; font-size: 10pt; }
+.meta th { width: 38%; }
+.disclaimer { margin-top: 30pt; font-size: 8.5pt; color: #6b7280; }
+.toc-page { page-break-after: always; }
+.toc-title { border-bottom: 2px solid #1e3a8a; font-size: 19pt; }
+ul.toc { list-style: none; padding: 0; }
+ul.toc li { margin: 3pt 0; }
+ul.toc li.toc2 { margin-left: 14pt; font-size: 9.2pt; }
+ul.toc li.toc1 { font-weight: bold; margin-top: 7pt; }
+ul.toc a { color: #1f2937; }
+ul.toc a::after { content: leader(".") target-counter(attr(href), page); font-weight: normal; }
+</style></head><body>
+<section class="title-page">
+  <div class="brand">DMB ProdTrack</div>
+  <h0 class="doc-title">User Guide</h0>
+  <div class="subtitle">Per-role walkthroughs for the back office and the shop-floor app</div>
+  <table class="meta">
+    <tr><th>Version</th><td>1.0</td></tr>
+    <tr><th>Date</th><td>27 September 2026</td></tr>
+    <tr><th>Application release</th><td>Sprint 2-3 batch (branch feature/sprint-2-3)</td></tr>
+    <tr><th>Audience</th><td>Plant staff - administrators, planners, supervisors, operators, QC inspectors, viewers</td></tr>
+    <tr><th>Author</th><td>Deo Bernal</td></tr>
+  </table>
+  <p class="disclaimer">Practice project. Not affiliated with, endorsed by, or based on the internal systems of
+  DMB Websolutions. Business rules and data are plausible assumptions.</p>
+</section>
+<section class="toc-page"><h1 class="toc-title">Contents</h1><ul class="toc"><li class="toc1"><a href="#about-this-guide">About this guide</a></li><li class="toc2"><a href="#roles-at-a-glance">Roles at a glance</a></li><li class="toc1"><a href="#signing-in-and-your-password">Signing in and your password</a></li><li class="toc2"><a href="#sign-in">Sign in</a></li><li class="toc2"><a href="#change-your-password">Change your password</a></li><li class="toc1"><a href="#back-office-screens">Back office screens</a></li><li class="toc2"><a href="#dashboard">Dashboard</a></li><li class="toc2"><a href="#sales-orders">Sales orders</a></li><li class="toc2"><a href="#work-orders">Work orders</a></li><li class="toc2"><a href="#products-and-routings">Products and routings</a></li><li class="toc2"><a href="#qc-checklists">QC checklists</a></li><li class="toc2"><a href="#administration-admin">Administration (Admin)</a></li><li class="toc1"><a href="#shop-floor-app">Shop floor app</a></li><li class="toc2"><a href="#open-the-app-and-choose-your-station">Open the app and choose your station</a></li><li class="toc2"><a href="#station-queue">Station queue</a></li><li class="toc2"><a href="#scanning">Scanning</a></li><li class="toc2"><a href="#run-an-operation">Run an operation</a></li><li class="toc2"><a href="#qc-inspection">QC inspection</a></li><li class="toc1"><a href="#typical-workflows-by-role">Typical workflows by role</a></li><li class="toc2"><a href="#planner">Planner</a></li><li class="toc2"><a href="#supervisor">Supervisor</a></li><li class="toc2"><a href="#operator">Operator</a></li><li class="toc2"><a href="#qc-inspector">QC inspector</a></li><li class="toc2"><a href="#administrator">Administrator</a></li><li class="toc2"><a href="#viewer">Viewer</a></li><li class="toc1"><a href="#troubleshooting">Troubleshooting</a></li></ul></section>
+<main><h1 id="about-this-guide">About this guide</h1>
+<p>DMB ProdTrack tracks production work for a plant that makes safety identification products: pipe markers, valve tags,
+safety signs and labels. It follows a job from the customer's sales order to a finished, inspected and packed work order.</p>
+<p>The application has two parts:</p>
+<table>
+<thead>
+<tr>
+<th>Part</th>
+<th>Address (local run)</th>
+<th>Used by</th>
+<th>Device</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Back office</strong></td>
+<td><code>https://localhost:5001/</code></td>
+<td>Admin, Planner, Supervisor, QC, Viewer</td>
+<td>Desktop or laptop browser</td>
+</tr>
+<tr>
+<td><strong>Shop floor</strong></td>
+<td><code>https://localhost:5001/floor/</code></td>
+<td>Operators, QC inspectors, supervisors</td>
+<td>Tablet or phone at a station (installable web app)</td>
+</tr>
+</tbody>
+</table>
+<p>All screenshots in this guide were captured from the running application with the automated Playwright tests, using
+demonstration data. Names of customers and people are fictitious.</p>
+<h2 id="roles-at-a-glance">Roles at a glance</h2>
+<table>
+<thead>
+<tr>
+<th>Role</th>
+<th>What the role can do</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Admin</strong></td>
+<td>Everything, including user administration, stations and reason codes</td>
+</tr>
+<tr>
+<td><strong>Planner</strong></td>
+<td>Sales orders, work orders (create, edit, release, hold, cancel), artwork upload and approval, products and routings</td>
+</tr>
+<tr>
+<td><strong>Supervisor</strong></td>
+<td>Everything read-only, plus hold/resume/cancel work orders, print travelers and run operations on the floor</td>
+</tr>
+<tr>
+<td><strong>Operator</strong></td>
+<td>Run operations on the floor (start, pause, complete, log scrap), upload artwork; read everything else</td>
+</tr>
+<tr>
+<td><strong>QC</strong></td>
+<td>Run operations and record QC inspections; read everything else</td>
+</tr>
+<tr>
+<td><strong>Viewer</strong></td>
+<td>Read-only access to dashboards, orders, products and routings</td>
+</tr>
+</tbody>
+</table>
+<p>A user can hold several roles. Menu entries that a role cannot use are hidden, and the server rejects the action
+even if someone tries to call it directly.</p>
+<h1 id="signing-in-and-your-password">Signing in and your password</h1>
+<h2 id="sign-in">Sign in</h2>
+<p>Open the back office address in a browser. You are sent to the sign-in page. Enter the email address and password your
+administrator gave you and select <strong>Sign in</strong>.</p>
+<figure><img src="../images/screens/01-login.png" alt="Sign-in page"/><figcaption>Sign-in page</figcaption></figure>
+<p>After five wrong passwords the account is locked for 15 minutes. An administrator can clear the lock by resetting the
+password.</p>
+<h2 id="change-your-password">Change your password</h2>
+<p>New accounts, and accounts whose password was reset by an administrator, must choose a new password at the first
+sign-in. Enter the temporary password once and the new password twice. Passwords need at least 12 characters.
+You can change your password at any time with <strong>Change password</strong> in the menu.</p>
+<figure><img src="../images/screens/02-change-password.png" alt="Forced password change"/><figcaption>Forced password change</figcaption></figure>
+<p>To sign out, select <strong>Sign out</strong> at the top right. Sessions last up to 12 hours of activity.</p>
+<blockquote>
+<p><strong>First run on a new database.</strong> In the local development setup the app creates the administrator
+<code>admin@prodtrack.local</code> with the temporary password <code>ChangeMe!Dev2026</code>. Change it at the first sign-in and then
+create personal accounts for everyone else under <strong>Users</strong>.</p>
+</blockquote>
+<h1 id="back-office-screens">Back office screens</h1>
+<h2 id="dashboard">Dashboard</h2>
+<p>The dashboard is the home page. Tiles show how many work orders are in each status (Draft, Released, InProgress,
+OnHold, Completed), how many are <strong>late</strong> (open and past their due date), and today's output: work orders completed,
+good units, scrap units and scrap rate. The <strong>WIP by station</strong> table lists, per station, the operations that are ready,
+in progress, paused and pending.</p>
+<p>The dashboard updates <strong>live</strong>: whenever an operator starts, pauses or completes a step, the numbers refresh within a
+second or two. The green <strong>Live</strong> badge shows the live connection is up; <strong>Refresh</strong> reloads on demand.</p>
+<figure><img src="../images/screens/03-dashboard.png" alt="Dashboard with live KPIs and WIP by station"/><figcaption>Dashboard with live KPIs and WIP by station</figcaption></figure>
+<h2 id="sales-orders">Sales orders</h2>
+<p><strong>Sales orders</strong> lists customer orders with number, customer, customer PO, due date, status and line count. Filter by
+status or search by customer, PO or number.</p>
+<figure><img src="../images/screens/04-sales-orders-list.png" alt="Sales order list"/><figcaption>Sales order list</figcaption></figure>
+<p>To enter an order (Planner, Admin) select <strong>New sales order</strong>, fill in customer, customer PO and due date, then add one
+line per product: product, quantity and, where relevant, legend text (for example the pipe content "FUEL GAS").
+The product's default specification is copied to the line. Save to get a number such as <code>SO-2026-00001</code>.</p>
+<figure><img src="../images/screens/05-sales-order-new.png" alt="New sales order with lines"/><figcaption>New sales order with lines</figcaption></figure>
+<p>On the order page, <strong>Create work orders</strong> makes one Draft work order per line. Lines that already have a work order
+are skipped, so it is safe to press it again after adding a line. Each line then links to its work order.
+<strong>Edit</strong> changes the header and the lines that do not yet have a work order. <strong>Cancel order</strong> is only possible while
+no open work orders exist for it.</p>
+<figure><img src="../images/screens/06-sales-order-detail.png" alt="Sales order with generated work orders"/><figcaption>Sales order with generated work orders</figcaption></figure>
+<h2 id="work-orders">Work orders</h2>
+<p><strong>Work orders</strong> lists all jobs, newest first, 25 per page. Filter by status, search by number, SKU or customer, and
+see late jobs highlighted.</p>
+<figure><img src="../images/screens/07-work-orders-list.png" alt="Work order list"/><figcaption>Work order list</figcaption></figure>
+<p><strong>New work order</strong> creates a job directly from a product when there is no sales order (for example stock or rework):
+choose the product, quantity, due date, priority (1 = highest), customer and legend.</p>
+<figure><img src="../images/screens/08-work-order-new.png" alt="New work order"/><figcaption>New work order</figcaption></figure>
+<h3 id="artwork-proofs">Artwork proofs</h3>
+<p>Products that need artwork approval (signs, printed pipe markers, custom labels) cannot be released until a proof is
+approved. On the Draft work order upload a proof (PDF, PNG, JPG or SVG, up to 20 MB). A Planner or Admin then
+<strong>Approves</strong> it, or <strong>Rejects</strong> it with a reason; a new upload supersedes the previous version.</p>
+<figure><img src="../images/screens/09-work-order-draft-artwork.png" alt="Draft work order waiting for artwork approval"/><figcaption>Draft work order waiting for artwork approval</figcaption></figure>
+<h3 id="release">Release</h3>
+<p><strong>Release</strong> copies the current routing of the product type into the work order as numbered operations
+(10, 20, 30, ...). The first operation becomes <strong>Ready</strong> at its station; the others are <strong>Pending</strong>. From now on the
+work order appears in the station queues on the shop floor.</p>
+<figure><img src="../images/screens/10-work-order-released.png" alt="Released work order with operations"/><figcaption>Released work order with operations</figcaption></figure>
+<p>Each operation row shows input, good and scrap quantities, who started it and when, and an <strong>Open on floor</strong> link.
+The page refreshes live while operators work.</p>
+<h3 id="print-the-traveler">Print the traveler</h3>
+<p><strong>Print traveler</strong> opens a printable page with a QR code for the work order and one QR code per operation, the
+specification and blank columns for operator, good, scrap and date. Select <strong>Print</strong> (or save as PDF from the print
+dialog). The traveler travels with the job; operators scan its codes at each station.</p>
+<figure><img src="../images/screens/11-traveler.png" alt="Printable traveler with QR codes"/><figcaption>Printable traveler with QR codes</figcaption></figure>
+<h3 id="hold-resume-and-cancel">Hold, resume and cancel</h3>
+<p>Supervisors, Planners and Admins can stop a job:</p>
+<ul>
+<li><strong>Hold</strong> - choose a hold reason code (for example <code>CUSTOMER-CHANGE</code>) and add a note. The work order shows a yellow
+  banner; floor actions on it are blocked until it is resumed. A failed QC inspection puts the work order on hold
+  automatically with reason <code>QC-FAIL</code>.</li>
+<li><strong>Resume</strong> - returns the job to the status it had before the hold.</li>
+<li><strong>Cancel</strong> - requires a reason and is only possible while no operation has been completed.</li>
+</ul>
+<figure><img src="../images/screens/12-work-order-on-hold.png" alt="Work order on hold with reason"/><figcaption>Work order on hold with reason</figcaption></figure>
+<h3 id="when-someone-else-changed-the-record">When someone else changed the record</h3>
+<p>If another user saved the same record after you opened it, ProdTrack does not overwrite their change. You see the
+message <em>"Someone else changed this ... after you opened it"</em> with a <strong>Reload latest</strong> button. Reload, re-apply your
+change and save again.</p>
+<h2 id="products-and-routings">Products and routings</h2>
+<p><strong>Products</strong> lists the catalogue with SKU, name, type and whether artwork approval is required. Planners and Admins can
+add or edit products and their type-specific specification (material, size, colour scheme, signal word and so on).</p>
+<figure><img src="../images/screens/15-products.png" alt="Product catalogue"/><figcaption>Product catalogue</figcaption></figure>
+<p><strong>Routings</strong> shows the current routing (sequence of stations) for each product type, with setup time and standard
+minutes per unit.</p>
+<figure><img src="../images/screens/13-routings.png" alt="Routings per product type"/><figcaption>Routings per product type</figcaption></figure>
+<p><strong>Edit</strong> opens the routing editor. Add, remove and reorder steps, choose the station, setup minutes, standard minutes
+per unit and whether a step may overlap the previous one. Saving creates a <strong>new version</strong>; work orders that are
+already released keep the operations they were released with.</p>
+<figure><img src="../images/screens/14-routing-editor.png" alt="Routing editor"/><figcaption>Routing editor</figcaption></figure>
+<h2 id="qc-checklists">QC checklists</h2>
+<p><strong>QC checklists</strong> shows the inspection checklist for each product type: pass/fail items and measured items with
+tolerances (for example engraving depth 0.1-0.3 mm). Inspectors complete these checklists on the shop floor.</p>
+<figure><img src="../images/screens/21-qc-checklists.png" alt="QC checklist templates"/><figcaption>QC checklist templates</figcaption></figure>
+<h2 id="administration-admin">Administration (Admin)</h2>
+<h3 id="stations">Stations</h3>
+<p>Stations are the work centres on the floor (Prepress, Printing, Laminating, Engraving, Die-cutting, QC, Packing).
+Admins can add, rename or deactivate stations. Deactivating does not affect work already in progress.</p>
+<figure><img src="../images/screens/16-stations.png" alt="Stations"/><figcaption>Stations</figcaption></figure>
+<h3 id="reason-codes">Reason codes</h3>
+<p>Reason codes explain <strong>scrap</strong> (misprint, colour mismatch, cutting error, material defect), <strong>pauses</strong> (break, waiting
+for material, end of shift), <strong>downtime</strong> and <strong>holds</strong> (customer change, QC fail). Admins add codes or deactivate old
+ones; deactivated codes are no longer offered but stay on historical records.</p>
+<figure><img src="../images/screens/17-reason-codes.png" alt="Reason codes"/><figcaption>Reason codes</figcaption></figure>
+<h3 id="users">Users</h3>
+<p><strong>Users</strong> lists every account with roles and status.</p>
+<figure><img src="../images/screens/18-users.png" alt="User list"/><figcaption>User list</figcaption></figure>
+<p><strong>New user</strong> creates an account with email (the sign-in name), display name, optional employee number, badge number and
+home station, one or more roles, and a temporary password. The user must change it at the first sign-in. ProdTrack
+does not send email - give the temporary password to the person directly.</p>
+<figure><img src="../images/screens/19-user-new.png" alt="Create a user"/><figcaption>Create a user</figcaption></figure>
+<p>Open a user to edit the profile and roles, <strong>Disable user</strong> (the person can no longer sign in; open sessions end at the
+next security check), <strong>Enable</strong> again, or <strong>Reset password</strong> to a new temporary password (this also clears a lockout).</p>
+<figure><img src="../images/screens/20-user-edit.png" alt="Edit a user, disable or reset password"/><figcaption>Edit a user, disable or reset password</figcaption></figure>
+<h1 id="shop-floor-app">Shop floor app</h1>
+<h2 id="open-the-app-and-choose-your-station">Open the app and choose your station</h2>
+<p>On the station tablet open <code>/floor/</code> (for example <code>https://localhost:5001/floor/</code>) and sign in with your own account.
+In Chrome or Edge you can <strong>Install</strong> the app so it opens full screen from the home screen.</p>
+<p>Pick your station. The tablet remembers it.</p>
+<figure><img src="../images/screens/22-floor-stations.png" alt="Station picker"/><figcaption>Station picker</figcaption></figure>
+<h2 id="station-queue">Station queue</h2>
+<p>The queue lists the operations that can be worked at this station - Ready, In progress and Paused - ordered by
+priority and due date. Work orders on hold stay visible with a yellow <strong>On hold</strong> badge, but cannot be worked until they are resumed. The queue refreshes by itself when work arrives from the previous station. Tap an operation to open it,
+or scan.</p>
+<figure><img src="../images/screens/23-floor-queue.png" alt="Station queue"/><figcaption>Station queue</figcaption></figure>
+<h2 id="scanning">Scanning</h2>
+<p>The scan box at the top of the floor pages accepts:</p>
+<ul>
+<li><strong>Camera scanning</strong> - select the camera button and hold the traveler QR code in front of the camera. This uses the
+  browser's built-in barcode detector (Chrome and Edge on Android, ChromeOS and macOS). The browser asks for camera
+  permission the first time; choose <strong>Allow</strong>.</li>
+<li><strong>Hardware scanners</strong> - USB or Bluetooth scanners that type the code and press Enter work in the scan box.</li>
+<li><strong>Manual entry</strong> - type the work order number (for example <code>WO-2026-000004</code>) or an operation code
+  (<code>OP:WO-2026-000004:10</code>) and press Enter.</li>
+</ul>
+<p>A work order code opens its current operation; an operation code opens that step. A short tone confirms a good scan.
+Unknown codes show a clear message:</p>
+<figure><img src="../images/screens/27-floor-scan-not-found.png" alt="Unknown code"/><figcaption>Unknown code</figcaption></figure>
+<h2 id="run-an-operation">Run an operation</h2>
+<p>The operation page shows the work order, product, station, input quantity, good and scrap so far, and the due date.</p>
+<figure><img src="../images/screens/24-floor-operation-ready.png" alt="Operation ready to start"/><figcaption>Operation ready to start</figcaption></figure>
+<ol>
+<li><strong>Start</strong> - clocks the step on and records you as the operator.</li>
+<li><strong>Pause</strong> - choose a reason (break, waiting for material, end of shift) and select <strong>Pause</strong>. <strong>Resume</strong> continues.</li>
+<li><strong>Log scrap</strong> - enter the quantity and a scrap reason, optionally a note, and select <strong>Log scrap</strong>. Scrap can be
+   logged several times while the step is in progress.</li>
+<li><strong>Complete step</strong> - enter the good quantity and select <strong>Complete step</strong>. Good plus scrap cannot exceed the input.
+   The next step becomes Ready at its station with the good quantity as its input. Completing the last step completes
+   the work order.</li>
+</ol>
+<figure><img src="../images/screens/25-floor-operation-in-progress.png" alt="Operation in progress with scrap logged"/><figcaption>Operation in progress with scrap logged</figcaption></figure>
+<h2 id="qc-inspection">QC inspection</h2>
+<p>At an inspection station (QC-01) the operation page shows the checklist for the product type. Mark each pass/fail item
+and enter measured values; values outside the tolerance fail automatically. Enter the sample size and notes and select
+<strong>Record inspection</strong> (QC or Admin role).</p>
+<ul>
+<li><strong>Pass</strong> completes the step and moves the job on to packing.</li>
+<li><strong>Fail</strong> puts the work order on hold with reason <code>QC-FAIL</code>. A supervisor reviews it and resumes it when the problem
+  is fixed.</li>
+</ul>
+<figure><img src="../images/screens/26-floor-qc-checklist.png" alt="QC checklist on the floor"/><figcaption>QC checklist on the floor</figcaption></figure>
+<h1 id="typical-workflows-by-role">Typical workflows by role</h1>
+<h2 id="planner">Planner</h2>
+<ol>
+<li>Enter the customer's <strong>sales order</strong> with its lines.</li>
+<li>Select <strong>Create work orders</strong> on the sales order.</li>
+<li>For each work order that needs artwork, upload the proof and approve it (or wait for approval).</li>
+<li><strong>Release</strong> the work order and <strong>Print traveler</strong>; hand the traveler to the first station.</li>
+<li>Watch progress on the <strong>Dashboard</strong> and the work order page.</li>
+</ol>
+<h2 id="supervisor">Supervisor</h2>
+<ol>
+<li>Watch the <strong>Dashboard</strong>: late jobs, WIP by station, today's scrap rate.</li>
+<li><strong>Hold</strong> a work order when there is a customer change or quality issue; <strong>Resume</strong> once it is cleared.</li>
+<li>Review work orders on hold after a failed inspection (<code>QC-FAIL</code>).</li>
+<li>Help at stations: supervisors can also run operations on the floor.</li>
+</ol>
+<h2 id="operator">Operator</h2>
+<ol>
+<li>Open <code>/floor/</code>, pick your station, and work the queue top to bottom.</li>
+<li>Scan the traveler (or tap the operation), <strong>Start</strong>, log any <strong>scrap</strong> with a reason, then <strong>Complete step</strong> with
+   the good quantity.</li>
+<li><strong>Pause</strong> with a reason for breaks or when waiting for material.</li>
+</ol>
+<h2 id="qc-inspector">QC inspector</h2>
+<ol>
+<li>At the QC station scan the traveler and <strong>Start</strong> the inspection step.</li>
+<li>Fill in the checklist and <strong>Record inspection</strong>. Fail holds the job for the supervisor.</li>
+</ol>
+<h2 id="administrator">Administrator</h2>
+<ol>
+<li>Create user accounts and assign roles; reset passwords and disable leavers.</li>
+<li>Maintain stations and reason codes.</li>
+<li>Change your own bootstrap password at the first sign-in.</li>
+</ol>
+<h2 id="viewer">Viewer</h2>
+<p>Use the dashboard, sales order and work order lists and detail pages for information. Actions are hidden.</p>
+<h1 id="troubleshooting">Troubleshooting</h1>
+<table>
+<thead>
+<tr>
+<th>Problem</th>
+<th>What to do</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>"Invalid sign-in attempt"</td>
+<td>Check the email and password (passwords are case-sensitive). After 5 failures the account is locked for 15 minutes; ask an Admin to reset the password.</td>
+</tr>
+<tr>
+<td>Asked to change password every time</td>
+<td>Complete the change form; the new password must be at least 12 characters and different from the temporary one.</td>
+</tr>
+<tr>
+<td>A menu item or button is missing</td>
+<td>Your role does not allow that action. Ask an Admin to add the role.</td>
+</tr>
+<tr>
+<td>"Someone else changed this ... after you opened it"</td>
+<td>Another user saved the record first. Select <strong>Reload latest</strong>, re-apply your change and save again.</td>
+</tr>
+<tr>
+<td>Cannot release a work order</td>
+<td>Approve the artwork proof first (products that require artwork), and check the work order is still Draft.</td>
+</tr>
+<tr>
+<td>Cannot start or complete an operation</td>
+<td>The work order may be on hold or cancelled, or the step is not Ready yet (a previous step is still open). At inspection stations a passed inspection is needed before completion.</td>
+</tr>
+<tr>
+<td>Complete is rejected</td>
+<td>Good quantity plus scrap cannot exceed the input quantity.</td>
+</tr>
+<tr>
+<td>Camera button does not appear or shows no picture</td>
+<td>The browser does not support the barcode detector, or camera permission was denied. Allow the camera in the site settings, use a hardware scanner, or type the code. The camera only works on <code>https://</code> or <code>localhost</code>.</td>
+</tr>
+<tr>
+<td>"No work order or operation found" after scanning</td>
+<td>The traveler may be from another environment or the code was mistyped. Check the number printed under the title.</td>
+</tr>
+<tr>
+<td>Dashboard shows no <strong>Live</strong> badge</td>
+<td>The live connection dropped (for example after the laptop slept). It reconnects automatically; select <strong>Refresh</strong> or reload the page.</td>
+</tr>
+<tr>
+<td>"An error has occurred" banner</td>
+<td>Reload the page. If it keeps happening, note the time and tell the administrator; the server log (<code>App_Data/logs</code>) has the details and a trace id.</td>
+</tr>
+<tr>
+<td>Shop-floor app shows an old version</td>
+<td>Close and reopen the app, or reload with Ctrl+F5 on a desktop browser.</td>
+</tr>
+</tbody>
+</table></main></body></html>

@@ -1,0 +1,13 @@
+sequenceDiagram
+  participant A as Planner A
+  participant B as Planner B
+  participant API as API
+  A->>API: GET /work-orders/7
+  API-->>A: 200, ETag "AAAAAAAAB9E="
+  B->>API: GET /work-orders/7
+  API-->>B: 200, ETag "AAAAAAAAB9E="
+  A->>API: PUT /work-orders/7, If-Match "AAAAAAAAB9E="
+  API-->>A: 200, new ETag "AAAAAAAAB9o="
+  B->>API: PUT /work-orders/7, If-Match "AAAAAAAAB9E="
+  API-->>B: 412 Precondition Failed (Concurrency.StaleVersion)
+  Note over API: Two writers passing the ETag check at the same instant:<br/>EF rowversion check fails -> 409 Conflict (Concurrency.Conflict)

@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="450" viewBox="0 0 1000 450" font-family="DejaVu Sans, Arial" font-size="12">
+<defs><marker id="a" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#374151"/></marker></defs>
+<rect x="5" y="20" width="990" height="120" rx="8" fill="none" stroke="#93c5fd" stroke-dasharray="5,4"/>
+<text x="15" y="38" font-size="13" font-weight="bold" fill="#1e3a8a">Order, artwork and release - Planner</text>
+<rect x="5" y="190" width="990" height="250" rx="8" fill="none" stroke="#86efac" stroke-dasharray="5,4"/>
+<text x="15" y="208" font-size="13" font-weight="bold" fill="#166534">Execution and quality - Operator, QC, Supervisor</text>
+<line x1="158.0" y1="89.0" x2="185.0" y2="89.0" stroke="#374151" stroke-width="1.6" marker-end="url(#a)"/>
+<line x1="323.0" y1="89.0" x2="350.0" y2="89.0" stroke="#374151" stroke-width="1.6" marker-end="url(#a)"/>
+<line x1="488.0" y1="89.0" x2="515.0" y2="89.0" stroke="#374151" stroke-width="1.6" marker-end="url(#a)"/>
+<line x1="653.0" y1="89.0" x2="680.0" y2="89.0" stroke="#374151" stroke-width="1.6" marker-end="url(#a)"/>
+<line x1="818.0" y1="89.0" x2="845.0" y2="89.0" stroke="#374151" stroke-width="1.6" marker-end="url(#a)"/>
+<line x1="914.0" y1="118.0" x2="914.0" y2="230.0" stroke="#374151" stroke-width="1.6" marker-end="url(#a)"/>
+<text x="920.0" y="169.0" font-size="11" fill="#374151" text-anchor="start">to first station</text>
+<line x1="845.0" y1="259.0" x2="758.0" y2="259.0" stroke="#374151" stroke-width="1.6" marker-end="url(#a)"/>
+<text x="807.5" y="254.0" font-size="11" fill="#374151" text-anchor="middle">each station</text>
+<line x1="620.0" y1="259.0" x2="533.0" y2="259.0" stroke="#374151" stroke-width="1.6" marker-end="url(#a)"/>
+<text x="582.5" y="254.0" font-size="11" fill="#374151" text-anchor="middle">pass</text>
+<line x1="395.0" y1="259.0" x2="308.0" y2="259.0" stroke="#374151" stroke-width="1.6" marker-end="url(#a)"/>
+<line x1="689.0" y1="288.0" x2="689.0" y2="360.0" stroke="#374151" stroke-width="1.6" marker-end="url(#a)"/>
+<text x="695.0" y="319.0" font-size="11" fill="#374151" text-anchor="start">fail</text>
+<line x1="914.0" y1="288.0" x2="914.0" y2="360.0" stroke="#374151" stroke-width="1.6" marker-end="url(#a)"/>
+<path d="M758,401.0 L808,401.0 L808,280 L845,280" fill="none" stroke="#374151" stroke-width="1.6" stroke-dasharray="4,3" marker-end="url(#a)"/>
+<text x="814" y="360.5" font-size="11" fill="#374151">resume</text>
+<path d="M564.0,60 C564.0,32 604.0,32 604.0,60" fill="none" stroke="#374151" stroke-width="1.4" marker-end="url(#a)"/>
+<text x="584.0" y="34" font-size="11" fill="#374151" text-anchor="middle">rejected: re-upload</text>
+<rect x="20" y="60" width="138" height="58" rx="6" fill="#f3f4f6" stroke="#6b7280"/>
+<text x="89.0" y="93.0" text-anchor="middle" font-weight="bold">Customer PO</text>
+<rect x="185" y="60" width="138" height="58" rx="6" fill="#dbeafe" stroke="#6b7280"/>
+<text x="254.0" y="85.5" text-anchor="middle" font-weight="bold">Sales order</text>
+<text x="254.0" y="100.5" text-anchor="middle" font-weight="normal">header + lines</text>
+<rect x="350" y="60" width="138" height="58" rx="6" fill="#dbeafe" stroke="#6b7280"/>
+<text x="419.0" y="85.5" text-anchor="middle" font-weight="bold">Draft work orders</text>
+<text x="419.0" y="100.5" text-anchor="middle" font-weight="normal">one per line</text>
+<rect x="515" y="60" width="138" height="58" rx="6" fill="#fef3c7" stroke="#6b7280"/>
+<text x="584.0" y="78.0" text-anchor="middle" font-weight="bold">Artwork proof</text>
+<text x="584.0" y="93.0" text-anchor="middle" font-weight="normal">approved</text>
+<text x="584.0" y="108.0" text-anchor="middle" font-weight="normal">(if required)</text>
+<rect x="680" y="60" width="138" height="58" rx="6" fill="#dbeafe" stroke="#6b7280"/>
+<text x="749.0" y="78.0" text-anchor="middle" font-weight="bold">Release</text>
+<text x="749.0" y="93.0" text-anchor="middle" font-weight="normal">operations from</text>
+<text x="749.0" y="108.0" text-anchor="middle" font-weight="normal">routing</text>
+<rect x="845" y="60" width="138" height="58" rx="6" fill="#dbeafe" stroke="#6b7280"/>
+<text x="914.0" y="85.5" text-anchor="middle" font-weight="bold">Print traveler</text>
+<text x="914.0" y="100.5" text-anchor="middle" font-weight="normal">with QR codes</text>
+<rect x="845" y="230" width="138" height="58" rx="6" fill="#dcfce7" stroke="#6b7280"/>
+<text x="914.0" y="248.0" text-anchor="middle" font-weight="bold">Scan at station</text>
+<text x="914.0" y="263.0" text-anchor="middle" font-weight="normal">start / pause /</text>
+<text x="914.0" y="278.0" text-anchor="middle" font-weight="normal">complete</text>
+<rect x="845" y="360" width="138" height="58" rx="6" fill="#fee2e2" stroke="#6b7280"/>
+<text x="914.0" y="385.5" text-anchor="middle" font-weight="bold">Log scrap</text>
+<text x="914.0" y="400.5" text-anchor="middle" font-weight="normal">with reason code</text>
+<rect x="620" y="230" width="138" height="58" rx="6" fill="#fef3c7" stroke="#6b7280"/>
+<text x="689.0" y="255.5" text-anchor="middle" font-weight="bold">QC inspection</text>
+<text x="689.0" y="270.5" text-anchor="middle" font-weight="normal">checklist</text>
+<rect x="620" y="360" width="138" height="58" rx="6" fill="#fee2e2" stroke="#6b7280"/>
+<text x="689.0" y="378.0" text-anchor="middle" font-weight="bold">Work order on hold</text>
+<text x="689.0" y="393.0" text-anchor="middle" font-weight="normal">QC-FAIL</text>
+<text x="689.0" y="408.0" text-anchor="middle" font-weight="normal">(supervisor)</text>
+<rect x="395" y="230" width="138" height="58" rx="6" fill="#dcfce7" stroke="#6b7280"/>
+<text x="464.0" y="255.5" text-anchor="middle" font-weight="bold">Packing</text>
+<text x="464.0" y="270.5" text-anchor="middle" font-weight="normal">(last operation)</text>
+<rect x="170" y="230" width="138" height="58" rx="6" fill="#bbf7d0" stroke="#6b7280"/>
+<text x="239.0" y="255.5" text-anchor="middle" font-weight="bold">Work order</text>
+<text x="239.0" y="270.5" text-anchor="middle" font-weight="normal">completed</text>
+</svg>

@@ -1,0 +1,16 @@
+sequenceDiagram
+  participant Tab as Floor tablet (/floor)
+  participant API as API /api/v1/operations
+  participant H as Handler + EF Core
+  participant N as SignalRNotifier
+  participant Hub as ProductionHub
+  participant Dash as Dashboard / WO detail
+  Tab->>API: POST /operations/42/complete {goodQuantity}
+  API->>H: CompleteOperation command
+  H->>H: domain rules, SaveChanges (audit + rowversion)
+  H->>N: OperationChanged event
+  N->>Hub: send to groups dashboard, station:PRINT-01, workorder:7
+  Hub-->>Dash: OperationChanged
+  Dash->>Dash: debounced reload of KPIs / WIP
+  Hub-->>Tab: OperationChanged (station queue refresh)
+  API-->>Tab: 200 OK (operation)
