@@ -6,6 +6,8 @@ public static class StationErrors
 {
     public static Error NotFound(int id) => Error.NotFound("Station.NotFound", $"Station {id} was not found.");
 
+    public static Error NotFoundByCode(string code) => Error.NotFound("Station.NotFound", $"Station {code} was not found.");
+
     public static ValidationError DuplicateCode(string code) => Error.Validation("code", $"Station code '{code}' already exists.");
 
     public static ValidationError InvalidCode => Error.Validation("code", "Station code must be 2-20 characters: A-Z, 0-9 and '-'.");

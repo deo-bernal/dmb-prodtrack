@@ -8,4 +8,7 @@ public enum ErrorType
     Conflict,
     Forbidden,
     BusinessRule,
+
+    /// <summary>The client's If-Match version is stale (HTTP 412).</summary>
+    PreconditionFailed,
 }
