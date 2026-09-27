@@ -156,7 +156,7 @@
             @foreach (var p in wo.ArtworkProofs)
             {
                 <tr>
-                    <td>v@p.Version</td>
+                    <td>v@(p.Version)</td>
                     <td><a href="api/v1/work-orders/@wo.Id/artwork/@p.Version" target="_blank">@p.OriginalFileName</a></td>
                     <td><StatusBadge Status="@p.Status.ToString()" /></td>
                     <td>@p.UploadedBy, @p.UploadedAtUtc.ToLocalTime().ToString("yyyy-MM-dd HH:mm", System.Globalization.CultureInfo.InvariantCulture)</td>

@@ -42,7 +42,7 @@ else
                     }
                     <div class="ms-auto text-end">
                         <div class="fs-4">@item.Quantity pcs</div>
-                        <div class="small @(item.IsLate ? "text-danger fw-bold" : "text-muted")">Due @item.DueDate.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture) · P@item.Priority</div>
+                        <div class="small @(item.IsLate ? "text-danger fw-bold" : "text-muted")">Due @item.DueDate.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture) · Priority @(item.Priority)</div>
                     </div>
                 </div>
                 <div class="text-muted">Step @item.Sequence · @item.ProductSku · @item.ProductName</div>
