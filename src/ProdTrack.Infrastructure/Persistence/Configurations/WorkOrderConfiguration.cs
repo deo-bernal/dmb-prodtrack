@@ -17,7 +17,9 @@ internal sealed class WorkOrderConfiguration : IEntityTypeConfiguration<WorkOrde
         builder.Property(w => w.ProductType).HasConversion<string>().HasMaxLength(20);
         builder.Property(w => w.CustomerName).HasMaxLength(WorkOrder.CustomerMaxLength);
         builder.Property(w => w.Legend).HasMaxLength(WorkOrder.LegendMaxLength);
-        builder.Property(w => w.HoldReason).HasMaxLength(200);
+        builder.Property(w => w.HoldReason).HasMaxLength(WorkOrder.ReasonMaxLength);
+        builder.Property(w => w.CancelReason).HasMaxLength(WorkOrder.ReasonMaxLength);
+        builder.Property(w => w.StatusBeforeHold).HasConversion<string>().HasMaxLength(20);
         builder.ComplexProperty(w => w.Spec, spec => spec.ToJson());
 
         builder.HasIndex(w => w.Number).IsUnique();
