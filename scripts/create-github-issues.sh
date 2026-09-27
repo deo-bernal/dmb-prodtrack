@@ -1,0 +1,1941 @@
+#!/usr/bin/env bash
+# create-github-issues.sh - GENERATED from docs/05-backlog.md sources (/_gen). Do not edit by hand.
+# Creates labels, sprint milestones and one issue per PT story in the GitHub repo, and (optionally)
+# adds each issue to a GitHub Projects board with a numeric "Points" field.
+#
+# Prerequisites: gh CLI logged in as the repo owner: gh auth login ; for Projects also: gh auth refresh -s project
+# Usage:
+#   DRY_RUN=1 ./scripts/create-github-issues.sh                  # default: print what would be created
+#   DRY_RUN=0 REPO=deo-bernal/dmb-prodtrack ./scripts/create-github-issues.sh
+#   DRY_RUN=0 PROJECT_NUMBER=1 ./scripts/create-github-issues.sh  # also add to user project #1
+# Re-running is safe: existing labels are updated, existing milestones and issues (matched by "PT-nnn:" title prefix) are skipped.
+set -euo pipefail
+REPO="${REPO:-deo-bernal/dmb-prodtrack}"
+OWNER="${REPO%%/*}"
+DRY_RUN="${DRY_RUN:-1}"
+PROJECT_NUMBER="${PROJECT_NUMBER:-}"
+PROJECT_ID=""; POINTS_FIELD_ID=""
+
+label() {
+  if [ "$DRY_RUN" = "1" ]; then echo "[dry-run] label: $1"; return; fi
+  gh label create "$1" --repo "$REPO" --color "$2" --description "$3" --force >/dev/null
+}
+
+EXISTING_MS=""
+if [ "$DRY_RUN" != "1" ]; then
+  EXISTING_MS="$(gh api "repos/$REPO/milestones?state=all&per_page=100" --jq '.[].title')"
+fi
+milestone() { # title due(YYYY-MM-DD or empty)
+  if printf '%s\n' "$EXISTING_MS" | grep -Fxq "$1"; then echo "milestone exists: $1"; return; fi
+  if [ "$DRY_RUN" = "1" ]; then echo "[dry-run] milestone: $1 ${2:+(due $2)}"; return; fi
+  if [ -n "$2" ]; then gh api "repos/$REPO/milestones" -f title="$1" -f due_on="$2T09:00:00Z" >/dev/null
+  else gh api "repos/$REPO/milestones" -f title="$1" >/dev/null; fi
+  echo "milestone created: $1"
+}
+
+if [ -n "$PROJECT_NUMBER" ] && [ "$DRY_RUN" != "1" ]; then
+  PROJECT_ID="$(gh project view "$PROJECT_NUMBER" --owner "$OWNER" --format json --jq .id)"
+  POINTS_FIELD_ID="$(gh project field-list "$PROJECT_NUMBER" --owner "$OWNER" --format json --jq '.fields[] | select(.name=="Points") | .id')"
+  if [ -z "$POINTS_FIELD_ID" ]; then
+    POINTS_FIELD_ID="$(gh project field-create "$PROJECT_NUMBER" --owner "$OWNER" --name Points --data-type NUMBER --format json --jq .id)"
+  fi
+fi
+
+issue() { # key title labels milestone points body
+  local key="$1" title="$2" labels="$3" ms="$4" pts="$5" body="$6" existing url item
+  if [ "$DRY_RUN" = "1" ]; then echo "[dry-run] issue: $title | $ms | $pts pts | $labels"; return; fi
+  existing="$(gh issue list --repo "$REPO" --state all --limit 500 --search "$key in:title" --json number,title \
+    --jq ".[] | select(.title | startswith(\"$key:\")) | .number" | head -n1)"
+  if [ -n "$existing" ]; then echo "issue exists: #$existing $key"; return; fi
+  url="$(gh issue create --repo "$REPO" --title "$title" --body "$body" --label "$labels" --milestone "$ms")"
+  echo "created: $url"
+  if [ -n "$PROJECT_NUMBER" ]; then
+    item="$(gh project item-add "$PROJECT_NUMBER" --owner "$OWNER" --url "$url" --format json --jq .id)"
+    gh project item-edit --id "$item" --project-id "$PROJECT_ID" --field-id "$POINTS_FIELD_ID" --number "$pts" >/dev/null
+  fi
+  sleep 1   # stay clear of secondary rate limits
+}
+
+echo "== Labels"
+label 'epic:E01' 5319e7 'Platform and DevOps Foundation'
+label 'feature:F01.1' 0e8a16 'GitHub repository, Projects board and CI'
+label 'devops' ededed ''
+label 'setup' ededed ''
+label 'github' ededed ''
+label 'mvp' d93f0b ''
+label 'ci' ededed ''
+label 'testing' ededed ''
+label 'feature:F01.2' 0e8a16 'Solution skeleton and cross-cutting concerns'
+label 'architecture' ededed ''
+label 'observability' ededed ''
+label 'api' ededed ''
+label 'error-handling' ededed ''
+label 'feature:F01.3' 0e8a16 'Infrastructure as code and continuous delivery'
+label 'hosting' ededed ''
+label 'monsterasp' ededed ''
+label 'security' ededed ''
+label 'cd' ededed ''
+label 'ops' ededed ''
+label 'runbook' ededed ''
+label 'epic:E02' 5319e7 'Identity and Access'
+label 'feature:F02.1' 0e8a16 'Authentication and authorization'
+label 'auth' ededed ''
+label 'identity' ededed ''
+label 'shopfloor' ededed ''
+label 'feature:F02.2' 0e8a16 'User profiles'
+label 'admin' ededed ''
+label 'users' ededed ''
+label 'epic:E03' 5319e7 'Master Data'
+label 'feature:F03.1' 0e8a16 'Stations and routings'
+label 'master-data' ededed ''
+label 'routing' ededed ''
+label 'feature:F03.2' 0e8a16 'Products and specifications'
+label 'product' ededed ''
+label 'reference-data' ededed ''
+label 'feature:F03.3' 0e8a16 'Reason codes'
+label 'quality' ededed ''
+label 'epic:E04' 5319e7 'Orders and Work Orders'
+label 'feature:F04.1' 0e8a16 'Sales orders'
+label 'orders' ededed ''
+label 'feature:F04.2' 0e8a16 'Work orders'
+label 'work-orders' ededed ''
+label 'ui' ededed ''
+label 'feature:F04.3' 0e8a16 'Artwork proofing'
+label 'artwork' ededed ''
+label 'storage' ededed ''
+label 'epic:E05' 5319e7 'Job Traveler'
+label 'feature:F05.1' 0e8a16 'Traveler generation'
+label 'traveler' ededed ''
+label 'pdf' ededed ''
+label 'audit' ededed ''
+label 'epic:E06' 5319e7 'Shop Floor Execution'
+label 'feature:F06.1' 0e8a16 'PWA shell and scanning'
+label 'pwa' ededed ''
+label 'scanning' ededed ''
+label 'e2e' ededed ''
+label 'feature:F06.2' 0e8a16 'Operation tracking'
+label 'execution' ededed ''
+label 'feature:F06.3' 0e8a16 'Scrap'
+label 'scrap' ededed ''
+label 'epic:E07' 5319e7 'Quality Control'
+label 'feature:F07.1' 0e8a16 'Inspections'
+label 'epic:E08' 5319e7 'Materials and Inventory Basics'
+label 'feature:F08.1' 0e8a16 'Materials'
+label 'inventory' ededed ''
+label 'epic:E09' 5319e7 'Supervisor Dashboard and Reporting'
+label 'feature:F09.1' 0e8a16 'Live dashboard'
+label 'dashboard' ededed ''
+label 'signalr' ededed ''
+label 'ux' ededed ''
+label 'blazor' ededed ''
+label 'kpi' ededed ''
+label 'feature:F09.2' 0e8a16 'Downtime and OEE-lite'
+label 'oee' ededed ''
+label 'epic:E10' 5319e7 'Audit and Compliance'
+label 'feature:F10.1' 0e8a16 'Audit trail'
+label 'epic:E11' 5319e7 'Release Readiness'
+label 'feature:F11.1' 0e8a16 'Hardening and release'
+label 'performance' ededed ''
+label 'google' ededed ''
+label 'release' ededed ''
+label 'portability' ededed ''
+label 'docker' ededed ''
+label 'docs' ededed ''
+label 'epic:E12' 5319e7 'Optional Alternative Hosting Targets (Azure, Google Cloud)'
+label 'feature:F12.1' 0e8a16 'Alternative targets and packages'
+label 'iac' ededed ''
+label 'azure' ededed ''
+label 'bicep' ededed ''
+label 'optional' c5def5 ''
+label 'packages' ededed ''
+label 'epic:E13' 5319e7 'Phase 2 and Later (not scheduled)'
+label 'feature:F13.1' 0e8a16 'Phase 2 candidates'
+label 'phase-2' fbca04 ''
+label 'mobile' ededed ''
+label 'maui' ededed ''
+label 'printing' ededed ''
+label 'integration' ededed ''
+label 'planning' ededed ''
+label 'notifications' ededed ''
+label 'entra' ededed ''
+label 'azure-devops' ededed ''
+
+echo "== Milestones"
+milestone 'Sprint 0' 2026-10-16
+milestone 'Sprint 1' 2026-10-30
+milestone 'Sprint 2' 2026-11-13
+milestone 'Sprint 3' 2026-11-27
+milestone 'Sprint 4' 2026-12-11
+milestone 'Sprint 5' 2027-01-15
+milestone 'Sprint 6' 2027-01-29
+milestone 'Sprint 7' 2027-02-12
+milestone 'Sprint 8' 2027-02-26
+milestone 'Phase 2' ''
+
+echo "== Issues"
+body=$(cat <<'__PT_BODY__'
+**Story:** As a **developer**, I want a private GitHub repo deo-bernal/dmb-prodtrack, a GitHub Projects board, and the backlog imported as issues with labels and sprint milestones, so that work is tracked and every change is linked to a story.
+
+**Points:** 3 | **Sprint:** Sprint 0 | **Epic:** E01 Platform and DevOps Foundation | **Feature:** F01.1 GitHub repository, Projects board and CI
+
+**Notes:** Follow docs/11-github-setup.md sections 1-4. Azure DevOps Boards import (backlog.csv) is the Phase 2 path in docs/04.
+
+### Acceptance criteria
+
+```gherkin
+Scenario: Repo exists
+  Given I have a GitHub account deo-bernal
+  When I create the private repo dmb-prodtrack from the repo-scaffold files
+  Then main is the default branch, squash merge only, auto-delete head branches on, and the PR template and CODEOWNERS are in place
+
+Scenario: Backlog imported
+  Given gh is authenticated and the repo exists
+  When I run scripts/create-github-issues.sh (dry run first)
+  Then labels, milestones Sprint 0 to Sprint 8 and Phase 2, and one issue per PT story exist, re-running creates no duplicates, and the issues are on the Projects board with a Points field
+
+Scenario: Board views
+  Given the Projects board
+  When I open it
+  Then a Board view by Status (Todo, In progress, In review, Done) and a Table view grouped by milestone show the sprint scope and points
+```
+
+_Source: docs/05-backlog.md (generated)_
+__PT_BODY__
+)
+issue PT-001 'PT-001: Set up GitHub repository, Projects board and backlog issues' 'epic:E01,feature:F01.1,devops,setup,github,mvp' 'Sprint 0' 3 "$body"
+body=$(cat <<'__PT_BODY__'
+**Story:** As a **developer**, I want a GitHub Actions workflow (.github/workflows/ci.yml on ubuntu-latest) that restores, checks formatting, builds, runs unit and integration tests and publishes results and coverage, so that broken code never reaches main.
+
+**Points:** 5 | **Sprint:** Sprint 0 | **Epic:** E01 Platform and DevOps Foundation | **Feature:** F01.1 GitHub repository, Projects board and CI
+
+**Notes:** Ready-to-commit file in repo-scaffold/.github/workflows/ci.yml; details in docs/11 section 6. Coverage gate starts as warning only.
+
+### Acceptance criteria
+
+```gherkin
+Scenario: PR validation
+  Given a pull request targets main
+  When the ci workflow runs
+  Then build, unit tests, integration tests (SQL Server service container) and the coverage summary appear on the run and the PR shows a failing check if any step fails
+
+Scenario: Artifact
+  Given a push to main passes CI
+  When the run finishes
+  Then an artifact prodtrack-drop with the win-x86 publish folder and the idempotent migrations.sql is available for the deploy workflow
+
+Scenario: Minutes budget
+  Given the repo is private on GitHub Free
+  When I check Settings > Billing after a sprint
+  Then Actions usage stays well under the 2,000 included minutes (concurrency cancels superseded runs, caching of NuGet packages)
+```
+
+_Source: docs/05-backlog.md (generated)_
+__PT_BODY__
+)
+issue PT-002 'PT-002: CI workflow: build, test and code coverage on every PR' 'epic:E01,feature:F01.1,devops,ci,testing,github,mvp' 'Sprint 0' 5 "$body"
+body=$(cat <<'__PT_BODY__'
+**Story:** As a **developer**, I want the ProdTrack solution with Domain, Application, Infrastructure, Contracts, ApiClient, UI.Shared, Server (API + SignalR + Blazor UI host, InProcess hosting for IIS) and ShopFloor (Blazor WebAssembly PWA) projects, test projects, and a docker-compose.yml for local SQL Server, so that all later stories have a consistent place to live.
+
+**Points:** 5 | **Sprint:** Sprint 0 | **Epic:** E01 Platform and DevOps Foundation | **Feature:** F01.2 Solution skeleton and cross-cutting concerns
+
+**Notes:** Structure is defined in docs/02-technical-design.md section 4. Cloud adapter projects (Infrastructure.Azure / .Gcp) are not created in the MVP; add them only if an alternative target is activated.
+
+### Acceptance criteria
+
+```gherkin
+Scenario: Solution builds
+  Given a fresh clone
+  When I run dotnet build and dotnet test
+  Then both succeed with zero warnings treated as errors in src projects
+
+Scenario: Health endpoint
+  Given the Server is running locally
+  When I call GET /health/ready
+  Then I get 200 with status Healthy including a database check, and GET /health/live returns 200 without touching the database
+
+Scenario: Dependency rule enforced
+  Given the solution
+  When an architecture test runs
+  Then it fails if Domain or Application reference Infrastructure, Server or any UI project
+```
+
+_Source: docs/05-backlog.md (generated)_
+__PT_BODY__
+)
+issue PT-003 'PT-003: Create clean-architecture solution skeleton' 'epic:E01,feature:F01.2,architecture,setup,mvp' 'Sprint 0' 5 "$body"
+body=$(cat <<'__PT_BODY__'
+**Story:** As a **support engineer**, I want structured logs with a correlation ID for every request written to rolling log files in the app data folder (and to the console locally), so that I can trace a problem on the MonsterASP site without a cloud logging service.
+
+**Points:** 3 | **Sprint:** Sprint 0 | **Epic:** E01 Platform and DevOps Foundation | **Feature:** F01.2 Solution skeleton and cross-cutting concerns
+
+**Notes:** Application code only uses ILogger, ActivitySource and Meter. Log files can be downloaded via FTP or the control panel for diagnosis.
+
+### Acceptance criteria
+
+```gherkin
+Scenario: Correlation
+  Given a request enters the Server
+  When it is processed
+  Then every log line for that request carries the same correlation ID and it is returned in the X-Correlation-Id response header
+
+Scenario: Rolling files within limits
+  Given the app runs on MonsterASP
+  When it logs for several days
+  Then logs are written as compact JSON to App_Data/logs with daily rolling, 10 MB per file and at most 14 files, so disk use stays small
+
+Scenario: Exporter by configuration
+  Given Telemetry:Exporter is None, Console or Otlp
+  When the app starts
+  Then only the configured sinks/exporters are active; OpenTelemetry export is off by default to save memory
+```
+
+_Source: docs/05-backlog.md (generated)_
+__PT_BODY__
+)
+issue PT-004 'PT-004: Structured logging (Serilog rolling file + console, OpenTelemetry-ready)' 'epic:E01,feature:F01.2,observability,mvp' 'Sprint 0' 3 "$body"
+body=$(cat <<'__PT_BODY__'
+**Story:** As an **API consumer**, I want consistent RFC 9457 ProblemDetails error responses, so that clients can show meaningful messages.
+
+**Points:** 2 | **Sprint:** Sprint 0 | **Epic:** E01 Platform and DevOps Foundation | **Feature:** F01.2 Solution skeleton and cross-cutting concerns
+
+### Acceptance criteria
+
+```gherkin
+Scenario: Validation error
+  Given a request with invalid data
+  When the API validates it
+  Then it returns 400 with a ProblemDetails body listing field errors
+
+Scenario: Unhandled error
+  Given an unexpected exception occurs
+  When the request fails
+  Then the API returns 500 ProblemDetails with a traceId and no stack trace outside Development
+```
+
+_Source: docs/05-backlog.md (generated)_
+__PT_BODY__
+)
+issue PT-005 'PT-005: Global error handling with ProblemDetails' 'epic:E01,feature:F01.2,api,error-handling,mvp' 'Sprint 0' 2 "$body"
+body=$(cat <<'__PT_BODY__'
+**Story:** As a **developer**, I want a documented local setup (SQL Server LocalDB/Express or Docker) and a publish configuration for MonsterASP (framework-dependent, win-x86, InProcess, web.config, App_Data folders excluded from deployment), so that the same build runs on my PC and on the free hosting.
+
+**Points:** 3 | **Sprint:** Sprint 0 | **Epic:** E01 Platform and DevOps Foundation | **Feature:** F01.3 Infrastructure as code and continuous delivery
+
+**Notes:** Self-contained deployment is optional and unverified on MonsterASP; framework-dependent is the documented route.
+
+### Acceptance criteria
+
+```gherkin
+Scenario: Local run
+  Given a fresh clone on my PC
+  When I follow docs/08 section 2
+  Then the app runs with SQL Server LocalDB or the Docker SQL Server container and Auth:Mode=Dev
+
+Scenario: Publish output
+  Given I run dotnet publish -c Release -r win-x86 --self-contained false
+  When the output is produced
+  Then it contains web.config with hostingModel inprocess, no appsettings.Production.json secrets, and the App_Data folders are created at runtime, not deployed
+
+Scenario: Lean memory
+  Given the app runs locally in Release
+  When I check the working set after startup and a few requests
+  Then it stays well below the 256 MB limit of the free plan (target < 180 MB), with Server GC settings from docs/02 section 14
+```
+
+_Source: docs/05-backlog.md (generated)_
+__PT_BODY__
+)
+issue PT-006 'PT-006: Local environment and MonsterASP-ready publish configuration' 'epic:E01,feature:F01.3,devops,hosting,monsterasp,mvp' 'Sprint 0' 3 "$body"
+body=$(cat <<'__PT_BODY__'
+**Story:** As a **product owner**, I want a free MonsterASP account with one site (planned dmb-prodtrack.runasp.net), one MSSQL database, HTTPS enabled and remote database access enabled, so that the app has a zero-cost hosted environment.
+
+**Points:** 2 | **Sprint:** Sprint 0 | **Epic:** E01 Platform and DevOps Foundation | **Feature:** F01.3 Infrastructure as code and continuous delivery
+
+**Notes:** Free plan: learning/testing only, no SLA, no backups, sleeps after 30 minutes idle, EU servers. See docs/03 section 3.
+
+### Acceptance criteria
+
+```gherkin
+Scenario: Account and site
+  Given I sign up for the free plan without a credit card
+  When I create the website
+  Then the site responds at https://<name>.runasp.net (planned dmb-prodtrack; alternative name recorded if taken) with a Let's Encrypt certificate
+
+Scenario: Database
+  Given the site exists
+  When I create the MSSQL database and enable remote access under Databases > Users and remote
+  Then I can connect from my PC with SSMS/sqlcmd and the connection string is stored only as the GitHub Actions secret PROD_DB_CONNECTION and in the server-only appsettings.Production.json
+
+Scenario: Credentials stored safely
+  Given FTP and Web Deploy credentials are shown in the control panel
+  When I finish setup
+  Then they are stored as GitHub Actions secrets (MONSTERASP_WEBDEPLOY_PASSWORD, MONSTERASP_FTP_*, PROD_DB_CONNECTION) and in my password manager, nowhere in the repo
+```
+
+_Source: docs/05-backlog.md (generated)_
+__PT_BODY__
+)
+issue PT-055 'PT-055: MonsterASP account, site and database setup' 'epic:E01,feature:F01.3,hosting,monsterasp,setup,mvp' 'Sprint 0' 2 "$body"
+body=$(cat <<'__PT_BODY__'
+**Story:** As a **developer**, I want GitHub Actions secrets and variables, a production environment, a manual deploy gate, Dependabot and documented merge rules that work on a private GitHub Free repo, so that deployments are deliberate and secrets stay safe without paid features.
+
+**Points:** 3 | **Sprint:** Sprint 0 | **Epic:** E01 Platform and DevOps Foundation | **Feature:** F01.3 Infrastructure as code and continuous delivery
+
+**Notes:** Plan limits verified on GitHub Docs 2026-09-26: required reviewers, environment secrets and protected branches/rulesets are available on private repos only with paid plans. Replaces the previous PT-059 (self-hosted Azure Pipelines agent), now part of the Phase 2 Azure DevOps migration PT-073.
+
+### Acceptance criteria
+
+```gherkin
+Scenario: Secrets
+  Given the MonsterASP values from PT-055
+  When I add them under Settings > Secrets and variables > Actions
+  Then they are repository secrets/variables with the names in docs/11 section 5 and are never printed in logs
+
+Scenario: Deploy gate
+  Given the repo is private on GitHub Free (no required reviewers, environment secrets or branch protection)
+  When code is merged to main
+  Then nothing deploys until I run the deploy workflow manually (workflow_dispatch) on main; the run is recorded on the production environment
+
+Scenario: Stronger gates when available
+  Given the repo is made public, or GitHub Pro is available
+  When I follow docs/11 section 7.2
+  Then a ruleset requires PRs and the ci check on main, the production environment requires my approval, and AUTO_DEPLOY=true lets merges deploy after approval
+
+Scenario: Dependencies
+  Given Dependabot version updates are configured for nuget and github-actions
+  When a new package version exists
+  Then a weekly PR is opened
+```
+
+_Source: docs/05-backlog.md (generated)_
+__PT_BODY__
+)
+issue PT-059 'PT-059: Repository guardrails on GitHub Free (secrets, deploy gate, Dependabot)' 'epic:E01,feature:F01.3,devops,security,github,mvp' 'Sprint 0' 3 "$body"
+body=$(cat <<'__PT_BODY__'
+**Story:** As a **developer**, I want a deploy workflow that takes the CI artifact of a main commit, applies the idempotent migration script to the MonsterASP database and syncs the site with Web Deploy (msdeploy) from a windows-latest runner, the method MonsterASP documents for GitHub Actions, so that every release reaches the hosted site the same repeatable way.
+
+**Points:** 5 | **Sprint:** Sprint 1 | **Epic:** E01 Platform and DevOps Foundation | **Feature:** F01.3 Infrastructure as code and continuous delivery
+
+**Notes:** Ready-to-commit file repo-scaffold/.github/workflows/deploy.yml; docs/11 section 6. Windows minutes may count double against the free quota, so the build runs on ubuntu and only the short deploy job on Windows. FTP alternative is PT-008.
+
+### Acceptance criteria
+
+```gherkin
+Scenario: Deploy
+  Given CI passed on main and I run the deploy workflow (or AUTO_DEPLOY is on and the production approval is given)
+  When the deploy-webdeploy job runs
+  Then it applies migrations with PROD_DB_CONNECTION, then runs msdeploy with -enableRule:AppOffline, skipping App_Data, logs and appsettings.Production.json
+
+Scenario: Smoke check
+  Given deployment finished
+  When the workflow calls https://<name>.runasp.net/health/ready with retries (the site may be waking up)
+  Then the job fails if it is not Healthy within about 3 minutes
+
+Scenario: No secrets leaked
+  Given the workflow runs
+  When I read the logs
+  Then the Web Deploy password and connection string are masked and never echoed
+```
+
+_Source: docs/05-backlog.md (generated)_
+__PT_BODY__
+)
+issue PT-007 'PT-007: Deploy workflow to MonsterASP (Web Deploy from windows-latest) with EF Core migrations' 'epic:E01,feature:F01.3,devops,cd,monsterasp,github,mvp' 'Sprint 1' 5 "$body"
+body=$(cat <<'__PT_BODY__'
+**Story:** As a **developer**, I want an alternative deploy job that uploads app_offline.htm, mirrors the publish folder with lftp from ubuntu-latest and removes app_offline.htm, plus a rehearsed rollback, so that I have a fallback if Web Deploy fails and can recover quickly from a bad release.
+
+**Points:** 3 | **Sprint:** Sprint 6 | **Epic:** E01 Platform and DevOps Foundation | **Feature:** F01.3 Infrastructure as code and continuous delivery
+
+### Acceptance criteria
+
+```gherkin
+Scenario: FTP deploy
+  Given repository variable DEPLOY_METHOD=ftp and the MONSTERASP_FTP_* secrets
+  When I run the deploy workflow
+  Then the deploy-ftp job runs instead of deploy-webdeploy, the site is offline only during the upload, and App_Data, logs and appsettings.Production.json are untouched
+
+Scenario: Rollback
+  Given a bad release is live
+  When I run the deploy workflow with the run ID of the previous good CI run
+  Then the previous build is live again within 10 minutes; migrations are forward-only (expand/contract)
+
+Scenario: One deploy at a time
+  Given two deploy runs are started
+  When they overlap
+  Then the concurrency group queues the second run
+```
+
+_Source: docs/05-backlog.md (generated)_
+__PT_BODY__
+)
+issue PT-008 'PT-008: FTP deploy alternative (ubuntu + lftp + app_offline.htm) and rollback rehearsal' 'epic:E01,feature:F01.3,devops,cd,monsterasp,github,mvp' 'Sprint 6' 3 "$body"
+body=$(cat <<'__PT_BODY__'
+**Story:** As a **product owner**, I want a runbook and reminders for the manual 90-day Let's Encrypt renewal, a weekly database backup export, and regular control-panel logins, so that the free site keeps working and I don't lose data (the free plan has no backups and may delete inactive accounts).
+
+**Points:** 2 | **Sprint:** Sprint 2 | **Epic:** E01 Platform and DevOps Foundation | **Feature:** F01.3 Infrastructure as code and continuous delivery
+
+**Notes:** Replaces the previous PT-067 (custom domain dev-prodtrack), deferred with the custom domain.
+
+### Acceptance criteria
+
+```gherkin
+Scenario: Certificate expiry check
+  Given the scheduled GitHub Actions workflow ops.yml runs weekly (Monday 09:00 PHT)
+  When the site certificate expires in less than 21 days
+  Then the run fails with a clear message and I renew it in the control panel following docs/08 section 6
+
+Scenario: Backup export
+  Given remote database access is enabled
+  When the weekly ops run executes sqlpackage /Action:Export (or I run it manually)
+  Then a .bacpac encrypted with BACKUP_PASSPHRASE is stored as a workflow artifact (retention 28 days, within the 500 MB free storage) and I download a copy to my PC monthly
+
+Scenario: Reminder
+  Given the certificate was renewed
+  When I update the runbook log
+  Then a calendar reminder and a GitHub issue (milestone of the sprint due) exist for the next renewal in about 80 days
+```
+
+_Source: docs/05-backlog.md (generated)_
+__PT_BODY__
+)
+issue PT-067 'PT-067: Ops runbook: HTTPS renewal, database backup export and account activity' 'epic:E01,feature:F01.3,ops,monsterasp,runbook,mvp' 'Sprint 2' 2 "$body"
+body=$(cat <<'__PT_BODY__'
+**Story:** As a **plant employee**, I want to sign in with the account an admin created for me, so that only known users can use the system.
+
+**Points:** 3 | **Sprint:** Sprint 1 | **Epic:** E02 Identity and Access | **Feature:** F02.1 Authentication and authorization
+
+**Notes:** No self-registration. Microsoft Entra ID is PT-069 (Phase 2, needs a tenant); Google sign-in is PT-068.
+
+### Acceptance criteria
+
+```gherkin
+Scenario: Sign in
+  Given I have an active account
+  When I enter my email and password
+  Then I am signed in and land on the page for my role
+
+Scenario: Lockout
+  Given I enter a wrong password 5 times
+  When I try again
+  Then the account is locked for 15 minutes and the attempt is logged
+
+Scenario: Bootstrap admin
+  Given an empty database and Auth:BootstrapAdmin:Email set
+  When the app starts for the first time
+  Then that admin account is created with the password from server-only configuration (appsettings.Production.json on the host / user-secrets locally) and must change it at first sign-in
+
+Scenario: Local dev mode
+  Given the app runs in Development with Auth:Mode=Dev
+  When I open the app
+  Then I can pick a test user and role; the app refuses to start with Auth:Mode=Dev in any other environment
+```
+
+_Source: docs/05-backlog.md (generated)_
+__PT_BODY__
+)
+issue PT-009 'PT-009: Sign in to the web app with ASP.NET Core Identity' 'epic:E02,feature:F02.1,security,auth,identity,mvp' 'Sprint 1' 3 "$body"
+body=$(cat <<'__PT_BODY__'
+**Story:** As an **admin**, I want features restricted by role (Admin, Planner, Supervisor, Operator, QC, Viewer), so that people only do what their job requires.
+
+**Points:** 3 | **Sprint:** Sprint 1 | **Epic:** E02 Identity and Access | **Feature:** F02.1 Authentication and authorization
+
+### Acceptance criteria
+
+```gherkin
+Scenario: Forbidden
+  Given I am a Viewer
+  When I call POST /api/v1/work-orders
+  Then I receive 403
+
+Scenario: UI hides actions
+  Given I am an Operator
+  When I open the web app navigation
+  Then I do not see Admin or Planning menus
+
+Scenario: Role matrix tested
+  Given the policy definitions
+  When the authorization tests run
+  Then each endpoint is verified against the role matrix in docs/02-technical-design.md
+```
+
+_Source: docs/05-backlog.md (generated)_
+__PT_BODY__
+)
+issue PT-010 'PT-010: Role-based authorization policies' 'epic:E02,feature:F02.1,security,auth,mvp' 'Sprint 1' 3 "$body"
+body=$(cat <<'__PT_BODY__'
+**Story:** As an **operator**, I want to sign in on the tablet PWA with my account, so that my actions are recorded under my name.
+
+**Points:** 2 | **Sprint:** Sprint 3 | **Epic:** E02 Identity and Access | **Feature:** F02.1 Authentication and authorization
+
+**Notes:** Shared-tablet badge login is Phase 2 (PT-060).
+
+### Acceptance criteria
+
+```gherkin
+Scenario: PWA sign-in
+  Given a tablet with the PWA installed
+  When I tap Sign in
+  Then I sign in through the Server's Identity pages (same-origin cookie session, BFF style, no tokens in the browser) and my name and role appear in the header
+
+Scenario: Session
+  Given I have been signed in during a shift
+  When the session approaches expiry
+  Then it is renewed by activity (sliding, 12 h max) and when it expires I am sent to sign-in with a clear message without losing an unsaved scan
+```
+
+_Source: docs/05-backlog.md (generated)_
+__PT_BODY__
+)
+issue PT-011 'PT-011: Sign in on the shop-floor PWA' 'epic:E02,feature:F02.1,security,auth,shopfloor,mvp' 'Sprint 3' 2 "$body"
+body=$(cat <<'__PT_BODY__'
+**Story:** As an **admin**, I want to create users, assign roles, reset passwords, deactivate users and set employee number, badge code and home station, so that access is controlled and operators can be identified by badge scans.
+
+**Points:** 5 | **Sprint:** Sprint 3 | **Epic:** E02 Identity and Access | **Feature:** F02.2 User profiles
+
+**Notes:** Roles are Identity roles. With Google sign-in (PT-068) a Google account can only be linked to a user created here.
+
+### Acceptance criteria
+
+```gherkin
+Scenario: Create user
+  Given I am an Admin
+  When I create a user with email, name, role Operator and a temporary password
+  Then the user exists, must change the password at first sign-in, and the change is audited
+
+Scenario: Deactivate
+  Given a user leaves
+  When I deactivate the account
+  Then the user can no longer sign in and existing sessions end within 30 minutes (security stamp)
+
+Scenario: Edit profile
+  Given I am an Admin
+  When I set employee number and badge code for a user
+  Then the values are saved, badge code is unique and the change is audited
+```
+
+_Source: docs/05-backlog.md (generated)_
+__PT_BODY__
+)
+issue PT-012 'PT-012: User administration and profiles (employee number, badge, roles)' 'epic:E02,feature:F02.2,admin,users,identity,mvp' 'Sprint 3' 5 "$body"
+body=$(cat <<'__PT_BODY__'
+**Story:** As an **admin**, I want to create, edit and deactivate stations (code, name, type, work center), so that work can be routed to real equipment areas.
+
+**Points:** 3 | **Sprint:** Sprint 1 | **Epic:** E03 Master Data | **Feature:** F03.1 Stations and routings
+
+**Notes:** Seed stations: PREPRESS, PRINT-01, LAM-01, ENGRAVE-01, DIECUT-01, QC-01, PACK-01.
+
+### Acceptance criteria
+
+```gherkin
+Scenario: Create station
+  Given I am an Admin
+  When I create station PRINT-01 of type Printing
+  Then it appears in the station list and can be used in routings
+
+Scenario: Unique code
+  Given station PRINT-01 exists
+  When I create another station with code PRINT-01
+  Then I see a validation error
+
+Scenario: Deactivate
+  Given a station has open operations
+  When I deactivate it
+  Then I am warned and it is hidden from new routings but open work is unaffected
+```
+
+_Source: docs/05-backlog.md (generated)_
+__PT_BODY__
+)
+issue PT-013 'PT-013: Manage production stations' 'epic:E03,feature:F03.1,master-data,mvp' 'Sprint 1' 3 "$body"
+body=$(cat <<'__PT_BODY__'
+**Story:** As a **planner**, I want to define an ordered list of stations with standard minutes per unit and setup minutes for each product type, so that work orders get the right steps automatically.
+
+**Points:** 5 | **Sprint:** Sprint 2 | **Epic:** E03 Master Data | **Feature:** F03.1 Stations and routings
+
+### Acceptance criteria
+
+```gherkin
+Scenario: Define routing
+  Given product type Pipe Marker
+  When I add steps 10 Prepress, 20 Printing, 30 Laminating, 40 Die-cutting, 50 QC, 60 Packing
+  Then the routing is saved as version 1
+
+Scenario: Versioning
+  Given routing version 1 is used by released work orders
+  When I edit the routing
+  Then a new version is created and existing work orders keep version 1
+```
+
+_Source: docs/05-backlog.md (generated)_
+__PT_BODY__
+)
+issue PT-014 'PT-014: Manage routing templates' 'epic:E03,feature:F03.1,master-data,routing,mvp' 'Sprint 2' 5 "$body"
+body=$(cat <<'__PT_BODY__'
+**Story:** As a **planner**, I want a catalog of products (pipe markers, valve tags, safety signs, labels) with default specs, so that orders are entered quickly and consistently.
+
+**Points:** 5 | **Sprint:** Sprint 1 | **Epic:** E03 Master Data | **Feature:** F03.2 Products and specifications
+
+### Acceptance criteria
+
+```gherkin
+Scenario: Create product
+  Given I am a Planner
+  When I create a Pipe Marker product with material, size, color scheme, standard and mounting
+  Then it is saved with a unique SKU
+
+Scenario: Type-specific fields
+  Given product type Valve Tag
+  When I open the form
+  Then I see tag shape, diameter, material thickness and hole size instead of pipe OD
+```
+
+_Source: docs/05-backlog.md (generated)_
+__PT_BODY__
+)
+issue PT-015 'PT-015: Manage product catalog with specifications' 'epic:E03,feature:F03.2,master-data,product,mvp' 'Sprint 1' 5 "$body"
+body=$(cat <<'__PT_BODY__'
+**Story:** As a **planner**, I want reference lists for pipe-marker color schemes and safety-sign signal words, so that specs use standard values instead of free text.
+
+**Points:** 2 | **Sprint:** Sprint 1 | **Epic:** E03 Master Data | **Feature:** F03.2 Products and specifications
+
+**Notes:** Values must be checked against the current editions of the standards before real use; see glossary in docs/01.
+
+### Acceptance criteria
+
+```gherkin
+Scenario: Pipe marker schemes
+  Given a new database
+  When seed data runs
+  Then color schemes such as Flammable (black on yellow) and Fire quenching (white on red) exist and are editable by Admin
+
+Scenario: Signal words
+  Given a new database
+  When seed data runs
+  Then DANGER, WARNING, CAUTION, NOTICE and SAFETY INSTRUCTIONS exist with their header colors
+```
+
+_Source: docs/05-backlog.md (generated)_
+__PT_BODY__
+)
+issue PT-016 'PT-016: Seed reference data for ASME A13.1 and ANSI Z535' 'epic:E03,feature:F03.2,master-data,reference-data,mvp' 'Sprint 1' 2 "$body"
+body=$(cat <<'__PT_BODY__'
+**Story:** As an **admin**, I want configurable reason code lists by category, so that operators pick a reason instead of typing.
+
+**Points:** 2 | **Sprint:** Sprint 1 | **Epic:** E03 Master Data | **Feature:** F03.3 Reason codes
+
+### Acceptance criteria
+
+```gherkin
+Scenario: Create reason
+  Given I am an Admin
+  When I add scrap reason MISPRINT in category Scrap
+  Then operators can select it when logging scrap
+
+Scenario: Deactivate
+  Given a reason code has history
+  When I deactivate it
+  Then it is not offered for new entries but history still shows it
+```
+
+_Source: docs/05-backlog.md (generated)_
+__PT_BODY__
+)
+issue PT-017 'PT-017: Manage scrap, pause and downtime reason codes' 'epic:E03,feature:F03.3,master-data,quality,mvp' 'Sprint 1' 2 "$body"
+body=$(cat <<'__PT_BODY__'
+**Story:** As a **planner**, I want to enter a sales order with customer, PO number, due date and lines (product, specs, legend text, quantity), so that production knows exactly what to make.
+
+**Points:** 5 | **Sprint:** Sprint 2 | **Epic:** E04 Orders and Work Orders | **Feature:** F04.1 Sales orders
+
+### Acceptance criteria
+
+```gherkin
+Scenario: Create order
+  Given I am a Planner
+  When I enter an order with two lines and save
+  Then the order gets number SO-yyyy-nnnnn and status Open
+
+Scenario: Legend required
+  Given a pipe marker line
+  When I save without legend text
+  Then I see a validation error
+
+Scenario: Spec override
+  Given a line based on a catalog product
+  When I change the color scheme on the line
+  Then only that line's spec changes, not the catalog product
+```
+
+_Source: docs/05-backlog.md (generated)_
+__PT_BODY__
+)
+issue PT-018 'PT-018: Enter a customer sales order with lines' 'epic:E04,feature:F04.1,orders,mvp' 'Sprint 2' 5 "$body"
+body=$(cat <<'__PT_BODY__'
+**Story:** As a **planner**, I want to create one work order per sales order line, so that each line is tracked through production.
+
+**Points:** 5 | **Sprint:** Sprint 2 | **Epic:** E04 Orders and Work Orders | **Feature:** F04.2 Work orders
+
+### Acceptance criteria
+
+```gherkin
+Scenario: Generate
+  Given an Open sales order with 3 lines
+  When I click Create work orders
+  Then 3 work orders in Draft status are created with number WO-yyyy-nnnnnn, copied specs, quantity and due date
+
+Scenario: No duplicates
+  Given a line already has a work order
+  When I click Create work orders again
+  Then no duplicate is created and I am told which lines were skipped
+```
+
+_Source: docs/05-backlog.md (generated)_
+__PT_BODY__
+)
+issue PT-019 'PT-019: Generate work orders from sales order lines' 'epic:E04,feature:F04.2,work-orders,mvp' 'Sprint 2' 5 "$body"
+body=$(cat <<'__PT_BODY__'
+**Story:** As a **planner**, I want to release a Draft work order, so that operations are created from the routing and appear in station queues.
+
+**Points:** 3 | **Sprint:** Sprint 2 | **Epic:** E04 Orders and Work Orders | **Feature:** F04.2 Work orders
+
+### Acceptance criteria
+
+```gherkin
+Scenario: Release
+  Given a Draft work order whose artwork is approved
+  When I release it
+  Then status becomes Released and one operation per routing step is created with status Pending, the first one Ready
+
+Scenario: Artwork gate
+  Given a work order whose product requires artwork and the proof is not approved
+  When I try to release it
+  Then release is blocked with message Artwork not approved
+```
+
+_Source: docs/05-backlog.md (generated)_
+__PT_BODY__
+)
+issue PT-020 'PT-020: Release a work order to the floor' 'epic:E04,feature:F04.2,work-orders,routing,mvp' 'Sprint 2' 3 "$body"
+body=$(cat <<'__PT_BODY__'
+**Story:** As a **planner**, I want to search and filter work orders by status, customer, due date and station, so that I can manage the schedule.
+
+**Points:** 3 | **Sprint:** Sprint 3 | **Epic:** E04 Orders and Work Orders | **Feature:** F04.2 Work orders
+
+### Acceptance criteria
+
+```gherkin
+Scenario: Filter
+  Given 200 work orders exist
+  When I filter Status = Released and Due before Friday
+  Then only matching rows show, paged 25 per page, sorted by due date
+
+Scenario: Late flag
+  Given a work order is past due and not completed
+  When I view the list
+  Then the row is marked Late
+```
+
+_Source: docs/05-backlog.md (generated)_
+__PT_BODY__
+)
+issue PT-021 'PT-021: Planner work order list with filters' 'epic:E04,feature:F04.2,work-orders,ui,mvp' 'Sprint 3' 3 "$body"
+body=$(cat <<'__PT_BODY__'
+**Story:** As a **supervisor**, I want to put a work order on hold with a reason, resume it, or cancel it, so that problems stop work until resolved.
+
+**Points:** 3 | **Sprint:** Sprint 4 | **Epic:** E04 Orders and Work Orders | **Feature:** F04.2 Work orders
+
+### Acceptance criteria
+
+```gherkin
+Scenario: Hold
+  Given a Released or In Progress work order
+  When I put it on hold with reason Customer change
+  Then status is On Hold and operators cannot start its operations
+
+Scenario: Cancel
+  Given a work order with no completed operations
+  When I cancel it with a reason
+  Then status is Cancelled and it leaves all queues
+
+Scenario: Audit
+  Given any of these actions
+  When it succeeds
+  Then an audit entry records who, when, old and new status and the reason
+```
+
+_Source: docs/05-backlog.md (generated)_
+__PT_BODY__
+)
+issue PT-022 'PT-022: Hold, resume and cancel a work order' 'epic:E04,feature:F04.2,work-orders,mvp' 'Sprint 4' 3 "$body"
+body=$(cat <<'__PT_BODY__'
+**Story:** As a **prepress operator**, I want to upload a PDF or image proof to a work order, so that the customer-approved design is stored with the job.
+
+**Points:** 3 | **Sprint:** Sprint 2 | **Epic:** E04 Orders and Work Orders | **Feature:** F04.3 Artwork proofing
+
+### Acceptance criteria
+
+```gherkin
+Scenario: Upload
+  Given a Draft work order
+  When I upload proof.pdf (max 20 MB)
+  Then it is stored through IFileStorage (local disk under App_Data/files on MonsterASP and locally; cloud providers only on the optional alternatives) as version 1 with status Pending approval
+
+Scenario: Wrong type
+  Given I choose a .exe file
+  When I upload
+  Then the upload is rejected; only PDF, PNG, JPG, SVG are allowed
+```
+
+_Source: docs/05-backlog.md (generated)_
+__PT_BODY__
+)
+issue PT-023 'PT-023: Upload artwork proof' 'epic:E04,feature:F04.3,artwork,storage,mvp' 'Sprint 2' 3 "$body"
+body=$(cat <<'__PT_BODY__'
+**Story:** As a **planner**, I want to record approval or rejection (for example after customer sign-off), so that only approved artwork is produced.
+
+**Points:** 3 | **Sprint:** Sprint 2 | **Epic:** E04 Orders and Work Orders | **Feature:** F04.3 Artwork proofing
+
+### Acceptance criteria
+
+```gherkin
+Scenario: Approve
+  Given a Pending proof
+  When I approve it with a note
+  Then status is Approved with my name and time and the work order can be released
+
+Scenario: Reject
+  Given a Pending proof
+  When I reject it with a reason
+  Then status is Rejected and a new version must be uploaded
+```
+
+_Source: docs/05-backlog.md (generated)_
+__PT_BODY__
+)
+issue PT-024 'PT-024: Approve or reject artwork proof' 'epic:E04,feature:F04.3,artwork,mvp' 'Sprint 2' 3 "$body"
+body=$(cat <<'__PT_BODY__'
+**Story:** As a **planner**, I want a one-page A4/Letter traveler with work order details, specs, legend, routing steps and QR codes, so that operators scan it instead of typing.
+
+**Points:** 5 | **Sprint:** Sprint 3 | **Epic:** E05 Job Traveler | **Feature:** F05.1 Traveler generation
+
+**Notes:** QR payload format is defined in docs/02-technical-design.md section 9.
+
+### Acceptance criteria
+
+```gherkin
+Scenario: Generate
+  Given a Released work order
+  When I click Print traveler
+  Then a PDF opens showing header QR (work order), one QR per operation, specs, legend text and due date
+
+Scenario: Scannable
+  Given the printed traveler
+  When a scanner reads the header QR
+  Then the value is WO:WO-yyyy-nnnnnn and per-operation codes are OP:WO-yyyy-nnnnnn:seq
+```
+
+_Source: docs/05-backlog.md (generated)_
+__PT_BODY__
+)
+issue PT-025 'PT-025: Generate printable job traveler PDF with QR codes' 'epic:E05,feature:F05.1,traveler,pdf,mvp' 'Sprint 3' 5 "$body"
+body=$(cat <<'__PT_BODY__'
+**Story:** As a **supervisor**, I want to reprint a lost or damaged traveler, so that work can continue, and reprints are traceable.
+
+**Points:** 1 | **Sprint:** Sprint 6 | **Epic:** E05 Job Traveler | **Feature:** F05.1 Traveler generation
+
+### Acceptance criteria
+
+```gherkin
+Scenario: Reprint
+  Given a traveler was printed before
+  When I reprint it
+  Then the PDF shows REPRINT n and an audit entry is written
+```
+
+_Source: docs/05-backlog.md (generated)_
+__PT_BODY__
+)
+issue PT-026 'PT-026: Reprint traveler with audit' 'epic:E05,feature:F05.1,traveler,audit,mvp' 'Sprint 6' 1 "$body"
+body=$(cat <<'__PT_BODY__'
+**Story:** As an **operator**, I want an installable tablet app with large touch targets where I pick my station, so that I see only my station's work.
+
+**Points:** 3 | **Sprint:** Sprint 3 | **Epic:** E06 Shop Floor Execution | **Feature:** F06.1 PWA shell and scanning
+
+### Acceptance criteria
+
+```gherkin
+Scenario: Install
+  Given Chrome or Edge on an Android or Windows tablet
+  When I open the ShopFloor URL
+  Then I am offered Install app and it launches full screen
+
+Scenario: Station
+  Given I am signed in
+  When I select or scan station PRINT-01
+  Then the choice is remembered on this device
+```
+
+_Source: docs/05-backlog.md (generated)_
+__PT_BODY__
+)
+issue PT-027 'PT-027: Installable shop-floor PWA shell with station selection' 'epic:E06,feature:F06.1,shopfloor,pwa,mvp' 'Sprint 3' 3 "$body"
+body=$(cat <<'__PT_BODY__'
+**Story:** As an **operator**, I want to scan traveler codes with a USB/Bluetooth scanner or the tablet camera, so that I never type work order numbers.
+
+**Points:** 5 | **Sprint:** Sprint 3 | **Epic:** E06 Shop Floor Execution | **Feature:** F06.1 PWA shell and scanning
+
+### Acceptance criteria
+
+```gherkin
+Scenario: Hardware scanner
+  Given the scan box has focus
+  When a keyboard-wedge scanner sends OP:WO-2026-000123:20 plus Enter
+  Then the operation is looked up and shown within 1 second
+
+Scenario: Camera
+  Given I tap Scan with camera
+  When I point at a traveler QR
+  Then the code is decoded and handled the same way
+
+Scenario: Bad code
+  Given I scan an unknown code
+  When it is processed
+  Then I see a clear red message and hear an error tone
+```
+
+_Source: docs/05-backlog.md (generated)_
+__PT_BODY__
+)
+issue PT-028 'PT-028: Scan QR/barcode via hardware scanner or camera' 'epic:E06,feature:F06.1,shopfloor,scanning,mvp' 'Sprint 3' 5 "$body"
+body=$(cat <<'__PT_BODY__'
+**Story:** As a **developer**, I want a Playwright test project that signs in with a test user and loads the dashboard and shop-floor home, so that UI regressions are caught early.
+
+**Points:** 3 | **Sprint:** Sprint 3 | **Epic:** E06 Shop Floor Execution | **Feature:** F06.1 PWA shell and scanning
+
+### Acceptance criteria
+
+```gherkin
+Scenario: Local run
+  Given the app runs locally
+  When I run dotnet test on ProdTrack.E2E.Tests
+  Then the smoke tests pass headless
+
+Scenario: CI workflow
+  Given the ci workflow starts the app on ubuntu-latest against a SQL Server service container
+  When the e2e job runs
+  Then results and Playwright traces are uploaded as artifacts on failure
+```
+
+_Source: docs/05-backlog.md (generated)_
+__PT_BODY__
+)
+issue PT-029 'PT-029: Set up Playwright E2E project with first smoke test' 'epic:E06,feature:F06.1,testing,e2e,mvp' 'Sprint 3' 3 "$body"
+body=$(cat <<'__PT_BODY__'
+**Story:** As an **operator**, I want to see Ready and In Progress operations for my station ordered by priority and due date, so that I know what to work on next.
+
+**Points:** 3 | **Sprint:** Sprint 4 | **Epic:** E06 Shop Floor Execution | **Feature:** F06.2 Operation tracking
+
+### Acceptance criteria
+
+```gherkin
+Scenario: Queue
+  Given 3 operations are Ready at PRINT-01
+  When I open the queue
+  Then they are listed with WO number, product, qty, due date and priority; late jobs are highlighted
+
+Scenario: Live
+  Given a planner releases a new work order routed to PRINT-01
+  When I am on the queue screen
+  Then the new operation appears without refresh
+```
+
+_Source: docs/05-backlog.md (generated)_
+__PT_BODY__
+)
+issue PT-030 'PT-030: Station queue' 'epic:E06,feature:F06.2,shopfloor,mvp' 'Sprint 4' 3 "$body"
+body=$(cat <<'__PT_BODY__'
+**Story:** As an **operator**, I want to start an operation by scanning its traveler code, so that actual start time and operator are recorded.
+
+**Points:** 3 | **Sprint:** Sprint 4 | **Epic:** E06 Shop Floor Execution | **Feature:** F06.2 Operation tracking
+
+### Acceptance criteria
+
+```gherkin
+Scenario: Start
+  Given a Ready operation at my station
+  When I scan it and tap Start
+  Then status is In Progress with my user ID and server UTC time, and the work order becomes In Progress
+
+Scenario: Wrong station
+  Given the operation belongs to LAM-01
+  When I scan it at PRINT-01
+  Then I am told the correct station and cannot start it
+
+Scenario: Previous step
+  Given the previous operation is not complete
+  When I try to start
+  Then I am blocked unless a Supervisor has allowed overlap for this routing step
+
+Scenario: On hold
+  Given the work order is On Hold
+  When I scan it
+  Then Start is disabled and the hold reason is shown
+```
+
+_Source: docs/05-backlog.md (generated)_
+__PT_BODY__
+)
+issue PT-031 'PT-031: Start an operation by scanning' 'epic:E06,feature:F06.2,shopfloor,execution,mvp' 'Sprint 4' 3 "$body"
+body=$(cat <<'__PT_BODY__'
+**Story:** As an **operator**, I want to pause an operation with a reason (break, material wait, machine issue) and resume it, so that time tracking is accurate.
+
+**Points:** 2 | **Sprint:** Sprint 4 | **Epic:** E06 Shop Floor Execution | **Feature:** F06.2 Operation tracking
+
+### Acceptance criteria
+
+```gherkin
+Scenario: Pause
+  Given an In Progress operation
+  When I tap Pause and choose Material wait
+  Then status is Paused and a pause event with reason is stored
+
+Scenario: Resume
+  Given a Paused operation
+  When I tap Resume
+  Then status returns to In Progress and paused time is excluded from run time
+```
+
+_Source: docs/05-backlog.md (generated)_
+__PT_BODY__
+)
+issue PT-032 'PT-032: Pause and resume an operation with reason' 'epic:E06,feature:F06.2,shopfloor,execution,mvp' 'Sprint 4' 2 "$body"
+body=$(cat <<'__PT_BODY__'
+**Story:** As an **operator**, I want to complete an operation by entering good quantity, so that the next station can start.
+
+**Points:** 3 | **Sprint:** Sprint 4 | **Epic:** E06 Shop Floor Execution | **Feature:** F06.2 Operation tracking
+
+### Acceptance criteria
+
+```gherkin
+Scenario: Complete
+  Given an In Progress operation for 100 units
+  When I enter good qty 98 and scrap 2 was logged
+  Then status is Completed and the next operation becomes Ready with input qty 98
+
+Scenario: Qty check
+  Given good plus scrap is more than input qty
+  When I complete
+  Then I see a validation error
+
+Scenario: Last step
+  Given I complete the last operation
+  When it saves
+  Then the work order becomes Completed
+```
+
+_Source: docs/05-backlog.md (generated)_
+__PT_BODY__
+)
+issue PT-033 'PT-033: Complete an operation with good quantity' 'epic:E06,feature:F06.2,shopfloor,execution,mvp' 'Sprint 4' 3 "$body"
+body=$(cat <<'__PT_BODY__'
+**Story:** As an **operator**, I want to log scrapped units with a reason code and optional note/photo, so that scrap is measured and root causes found.
+
+**Points:** 3 | **Sprint:** Sprint 4 | **Epic:** E06 Shop Floor Execution | **Feature:** F06.3 Scrap
+
+### Acceptance criteria
+
+```gherkin
+Scenario: Log scrap
+  Given an In Progress operation
+  When I log 2 units with reason MISPRINT
+  Then a scrap record is saved and the dashboard scrap rate updates
+
+Scenario: Reason required
+  Given I log scrap
+  When no reason is chosen
+  Then Save is disabled
+```
+
+_Source: docs/05-backlog.md (generated)_
+__PT_BODY__
+)
+issue PT-034 'PT-034: Log scrap with reason code' 'epic:E06,feature:F06.3,shopfloor,quality,scrap,mvp' 'Sprint 4' 3 "$body"
+body=$(cat <<'__PT_BODY__'
+**Story:** As a **QC inspector**, I want checklist templates (for example legend spelling, color scheme vs spec, dimensions, adhesion, engraving depth), so that inspections are consistent.
+
+**Points:** 3 | **Sprint:** Sprint 5 | **Epic:** E07 Quality Control | **Feature:** F07.1 Inspections
+
+### Acceptance criteria
+
+```gherkin
+Scenario: Template
+  Given I am QC
+  When I create a Pipe Marker checklist with 5 items, some requiring a measured value with tolerance
+  Then it is used for new QC operations of that product type
+```
+
+_Source: docs/05-backlog.md (generated)_
+__PT_BODY__
+)
+issue PT-035 'PT-035: QC checklist templates per product type' 'epic:E07,feature:F07.1,quality,mvp' 'Sprint 5' 3 "$body"
+body=$(cat <<'__PT_BODY__'
+**Story:** As a **QC inspector**, I want to record pass/fail per checklist item, sample size and measurements at the QC station, so that quality evidence is stored with the job.
+
+**Points:** 5 | **Sprint:** Sprint 5 | **Epic:** E07 Quality Control | **Feature:** F07.1 Inspections
+
+### Acceptance criteria
+
+```gherkin
+Scenario: Pass
+  Given a QC operation is In Progress
+  When all items pass and I submit
+  Then the inspection is Passed, the QC operation completes and packing becomes Ready
+
+Scenario: Out of tolerance
+  Given a measured item outside tolerance
+  When I enter the value
+  Then the item is automatically marked Fail
+```
+
+_Source: docs/05-backlog.md (generated)_
+__PT_BODY__
+)
+issue PT-036 'PT-036: Record QC inspection result' 'epic:E07,feature:F07.1,quality,shopfloor,mvp' 'Sprint 5' 5 "$body"
+body=$(cat <<'__PT_BODY__'
+**Story:** As a **QC inspector**, I want a failed inspection to either hold the work order or send it back to a chosen station for rework, so that defective product never ships.
+
+**Points:** 3 | **Sprint:** Sprint 5 | **Epic:** E07 Quality Control | **Feature:** F07.1 Inspections
+
+### Acceptance criteria
+
+```gherkin
+Scenario: Fail with rework
+  Given an inspection fails
+  When I choose Rework at PRINT-01 for 10 units
+  Then a rework operation is added at PRINT-01 and a new QC operation follows it
+
+Scenario: Fail with hold
+  Given an inspection fails
+  When I choose Hold
+  Then the work order is On Hold with reason QC failed and supervisors are notified on the dashboard
+```
+
+_Source: docs/05-backlog.md (generated)_
+__PT_BODY__
+)
+issue PT-037 'PT-037: Failed QC puts work order on hold or creates rework' 'epic:E07,feature:F07.1,quality,mvp' 'Sprint 5' 3 "$body"
+body=$(cat <<'__PT_BODY__'
+**Story:** As a **planner**, I want a list of materials (vinyl roll, polyester, aluminum blank, stainless blank, laminate, ink) with unit of measure, on-hand qty and reorder point, so that I know what is available.
+
+**Points:** 3 | **Sprint:** Sprint 4 | **Epic:** E08 Materials and Inventory Basics | **Feature:** F08.1 Materials
+
+### Acceptance criteria
+
+```gherkin
+Scenario: Create
+  Given I am a Planner
+  When I add material VINYL-WHT-24 in square meters with reorder point 50
+  Then it appears in the material list with on-hand 0
+```
+
+_Source: docs/05-backlog.md (generated)_
+__PT_BODY__
+)
+issue PT-038 'PT-038: Manage materials and stock levels' 'epic:E08,feature:F08.1,inventory,mvp' 'Sprint 4' 3 "$body"
+body=$(cat <<'__PT_BODY__'
+**Story:** As a **planner**, I want to record receipts and adjustments with a reason, so that on-hand quantities stay accurate.
+
+**Points:** 2 | **Sprint:** Sprint 4 | **Epic:** E08 Materials and Inventory Basics | **Feature:** F08.1 Materials
+
+### Acceptance criteria
+
+```gherkin
+Scenario: Receipt
+  Given VINYL-WHT-24 has 10 on hand
+  When I receive 100
+  Then on-hand is 110 and a stock transaction is stored
+
+Scenario: Negative block
+  Given on-hand is 5
+  When I adjust -10
+  Then I see an error unless I am Admin
+```
+
+_Source: docs/05-backlog.md (generated)_
+__PT_BODY__
+)
+issue PT-039 'PT-039: Receive and adjust stock' 'epic:E08,feature:F08.1,inventory,mvp' 'Sprint 4' 2 "$body"
+body=$(cat <<'__PT_BODY__'
+**Story:** As an **operator**, I want materials to be consumed automatically from the bill of materials when I complete an operation, with an option to adjust, so that work order material cost and stock are accurate.
+
+**Points:** 3 | **Sprint:** Sprint 4 | **Epic:** E08 Materials and Inventory Basics | **Feature:** F08.1 Materials
+
+### Acceptance criteria
+
+```gherkin
+Scenario: Backflush
+  Given a product BOM says 0.05 m2 vinyl per unit at Printing
+  When I complete Printing with 98 good and 2 scrap
+  Then 5.0 m2 is consumed (good plus scrap) and on-hand is reduced
+
+Scenario: Adjust
+  Given the actual usage differs
+  When I edit consumption before confirming
+  Then the entered value is used and the difference is flagged
+```
+
+_Source: docs/05-backlog.md (generated)_
+__PT_BODY__
+)
+issue PT-040 'PT-040: Record material consumption on operations' 'epic:E08,feature:F08.1,inventory,execution,mvp' 'Sprint 4' 3 "$body"
+body=$(cat <<'__PT_BODY__'
+**Story:** As a **supervisor**, I want a dashboard tile per station showing Ready, In Progress, Paused counts and units, so that I see bottlenecks as they happen.
+
+**Points:** 5 | **Sprint:** Sprint 5 | **Epic:** E09 Supervisor Dashboard and Reporting | **Feature:** F09.1 Live dashboard
+
+### Acceptance criteria
+
+```gherkin
+Scenario: Live update
+  Given the dashboard is open
+  When an operator starts an operation
+  Then the station tile updates within 2 seconds without page reload
+
+Scenario: Reconnect
+  Given the network drops
+  When it comes back
+  Then the dashboard reconnects and reloads current numbers
+```
+
+_Source: docs/05-backlog.md (generated)_
+__PT_BODY__
+)
+issue PT-041 'PT-041: Live WIP by station' 'epic:E09,feature:F09.1,dashboard,signalr,mvp' 'Sprint 5' 5 "$body"
+body=$(cat <<'__PT_BODY__'
+**Story:** As an **operator**, I want clear, friendly messages and automatic recovery when the connection drops or the site is waking up, so that I am not confused when the free hosting sleeps after 30 minutes idle or the network blips.
+
+**Points:** 3 | **Sprint:** Sprint 5 | **Epic:** E09 Supervisor Dashboard and Reporting | **Feature:** F09.1 Live dashboard
+
+**Notes:** MonsterASP free sleeps after 30 minutes without requests (cannot be changed on free). Do not add keep-alive pings to defeat it (fair use).
+
+### Acceptance criteria
+
+```gherkin
+Scenario: Blazor reconnect
+  Given a supervisor page is open and the server restarts or the app pool recycles
+  When the circuit drops
+  Then a branded reconnect overlay shows 'Reconnecting...', retries automatically with backoff, and reloads the page if the circuit cannot be resumed
+
+Scenario: PWA reconnect
+  Given a station screen is open
+  When the SignalR connection drops
+  Then a banner shows 'Offline - retrying', the connection is re-established automatically and the queue is re-fetched
+
+Scenario: Cold start
+  Given the site has been idle for more than 30 minutes
+  When I open it
+  Then a lightweight loading page appears within a few seconds and the app is usable without an error page
+```
+
+_Source: docs/05-backlog.md (generated)_
+__PT_BODY__
+)
+issue PT-072 'PT-072: Friendly reconnect and cold-start experience' 'epic:E09,feature:F09.1,ux,signalr,blazor,hosting,mvp' 'Sprint 5' 3 "$body"
+body=$(cat <<'__PT_BODY__'
+**Story:** As a **supervisor**, I want a list of work orders that are late or at risk (remaining standard time exceeds time to due date), so that I can act before customers are let down.
+
+**Points:** 3 | **Sprint:** Sprint 5 | **Epic:** E09 Supervisor Dashboard and Reporting | **Feature:** F09.1 Live dashboard
+
+**Notes:** At-risk formula in docs/01 section 9.
+
+### Acceptance criteria
+
+```gherkin
+Scenario: Late
+  Given a work order due yesterday is not complete
+  When I open the dashboard
+  Then it is in the Late list with days late
+
+Scenario: At risk
+  Given remaining standard minutes exceed working minutes until due
+  When I open the dashboard
+  Then it is in the At risk list
+```
+
+_Source: docs/05-backlog.md (generated)_
+__PT_BODY__
+)
+issue PT-042 'PT-042: Late and at-risk jobs list' 'epic:E09,feature:F09.1,dashboard,mvp' 'Sprint 5' 3 "$body"
+body=$(cat <<'__PT_BODY__'
+**Story:** As a **supervisor**, I want today, this week and custom-range throughput (units completed) and scrap rate by station and reason, so that I can track KPIs.
+
+**Points:** 3 | **Sprint:** Sprint 5 | **Epic:** E09 Supervisor Dashboard and Reporting | **Feature:** F09.1 Live dashboard
+
+### Acceptance criteria
+
+```gherkin
+Scenario: Scrap rate
+  Given 100 good and 5 scrap units at PRINT-01 today
+  When I view KPIs
+  Then scrap rate for PRINT-01 today shows 4.8 percent (5 / 105)
+
+Scenario: Pareto
+  Given scrap from several reasons
+  When I open the scrap chart
+  Then reasons are sorted by quantity descending
+```
+
+_Source: docs/05-backlog.md (generated)_
+__PT_BODY__
+)
+issue PT-043 'PT-043: Throughput and scrap rate' 'epic:E09,feature:F09.1,dashboard,kpi,mvp' 'Sprint 5' 3 "$body"
+body=$(cat <<'__PT_BODY__'
+**Story:** As a **supervisor**, I want a timeline of every event on a work order (release, starts, pauses, scrap, QC, completion), so that I can answer where is my order and what happened.
+
+**Points:** 3 | **Sprint:** Sprint 6 | **Epic:** E09 Supervisor Dashboard and Reporting | **Feature:** F09.1 Live dashboard
+
+### Acceptance criteria
+
+```gherkin
+Scenario: Timeline
+  Given a work order with activity
+  When I open its detail page
+  Then events are listed in time order with user, station and Manila local time
+```
+
+_Source: docs/05-backlog.md (generated)_
+__PT_BODY__
+)
+issue PT-044 'PT-044: Work order timeline and history' 'epic:E09,feature:F09.1,work-orders,audit,mvp' 'Sprint 6' 3 "$body"
+body=$(cat <<'__PT_BODY__'
+**Story:** As an **operator**, I want to record when my station is down and why, so that availability losses are visible.
+
+**Points:** 3 | **Sprint:** Sprint 6 | **Epic:** E09 Supervisor Dashboard and Reporting | **Feature:** F09.2 Downtime and OEE-lite
+
+### Acceptance criteria
+
+```gherkin
+Scenario: Start/stop
+  Given my station is running
+  When I tap Station down and choose reason Printer fault, later tap Station up
+  Then a downtime event with duration is stored and the station tile shows Down in red meanwhile
+```
+
+_Source: docs/05-backlog.md (generated)_
+__PT_BODY__
+)
+issue PT-045 'PT-045: Log station downtime' 'epic:E09,feature:F09.2,shopfloor,oee,mvp' 'Sprint 6' 3 "$body"
+body=$(cat <<'__PT_BODY__'
+**Story:** As a **supervisor**, I want an OEE-lite figure per station and shift (Availability x Performance x Quality), so that I can compare stations and see trend.
+
+**Points:** 5 | **Sprint:** Sprint 6 | **Epic:** E09 Supervisor Dashboard and Reporting | **Feature:** F09.2 Downtime and OEE-lite
+
+**Notes:** Formula and shift assumption in docs/01 section 9.
+
+### Acceptance criteria
+
+```gherkin
+Scenario: Calculate
+  Given planned time 480 min, downtime 48 min, standard minutes earned 345.6, good 95 of 100 units
+  When I view OEE-lite
+  Then Availability 90 percent, Performance 80 percent, Quality 95 percent, OEE-lite 68.4 percent
+
+Scenario: Explain
+  Given I hover the OEE value
+  When the tooltip opens
+  Then it shows the three factors and states that it is a simplified OEE
+```
+
+_Source: docs/05-backlog.md (generated)_
+__PT_BODY__
+)
+issue PT-046 'PT-046: OEE-lite per station' 'epic:E09,feature:F09.2,dashboard,kpi,oee,mvp' 'Sprint 6' 5 "$body"
+body=$(cat <<'__PT_BODY__'
+**Story:** As a **quality manager**, I want every create, update and delete on business entities to be recorded with user, time, old and new values, so that we have full traceability.
+
+**Points:** 3 | **Sprint:** Sprint 1 | **Epic:** E10 Audit and Compliance | **Feature:** F10.1 Audit trail
+
+**Notes:** Use an EF Core SaveChanges interceptor.
+
+### Acceptance criteria
+
+```gherkin
+Scenario: Update logged
+  Given a Planner changes a work order due date
+  When it is saved
+  Then an audit entry holds entity, key, field changes (old to new), user and UTC time
+
+Scenario: Immutable
+  Given audit entries exist
+  When anyone calls an update or delete on audit data
+  Then no endpoint exists and the table grants insert/select only to the app identity
+```
+
+_Source: docs/05-backlog.md (generated)_
+__PT_BODY__
+)
+issue PT-047 'PT-047: Capture audit trail automatically' 'epic:E10,feature:F10.1,audit,security,mvp' 'Sprint 1' 3 "$body"
+body=$(cat <<'__PT_BODY__'
+**Story:** As an **admin**, I want to search the audit log by entity, user and date, so that I can investigate issues.
+
+**Points:** 2 | **Sprint:** Sprint 6 | **Epic:** E10 Audit and Compliance | **Feature:** F10.1 Audit trail
+
+### Acceptance criteria
+
+```gherkin
+Scenario: Search
+  Given audit entries exist
+  When I filter entity WorkOrder and key WO-2026-000123
+  Then I see its full change history, paged
+```
+
+_Source: docs/05-backlog.md (generated)_
+__PT_BODY__
+)
+issue PT-048 'PT-048: Audit log viewer' 'epic:E10,feature:F10.1,audit,admin,mvp' 'Sprint 6' 2 "$body"
+body=$(cat <<'__PT_BODY__'
+**Story:** As a **planner**, I want a dashboard alert when on-hand falls below reorder point, so that we reorder in time.
+
+**Points:** 2 | **Sprint:** Sprint 6 | **Epic:** E10 Audit and Compliance | **Feature:** F10.1 Audit trail
+
+### Acceptance criteria
+
+```gherkin
+Scenario: Alert
+  Given reorder point 50 and on-hand drops to 45
+  When consumption is saved
+  Then the Low stock widget lists the material in real time
+```
+
+_Source: docs/05-backlog.md (generated)_
+__PT_BODY__
+)
+issue PT-049 'PT-049: Low-stock alert on dashboard' 'epic:E10,feature:F10.1,inventory,dashboard,mvp' 'Sprint 6' 2 "$body"
+body=$(cat <<'__PT_BODY__'
+**Story:** As a **developer**, I want the main flows (order to work order, release, traveler, scan start/complete, QC, dashboard) covered by Playwright and required before prod, so that releases are safe.
+
+**Points:** 5 | **Sprint:** Sprint 7 | **Epic:** E11 Release Readiness | **Feature:** F11.1 Hardening and release
+
+### Acceptance criteria
+
+```gherkin
+Scenario: Gate
+  Given the e2e job runs in the ci workflow against a throwaway database
+  When E2E tests fail
+  Then the deploy workflow refuses to deploy that commit (it requires a successful ci run)
+
+Scenario: Post-deploy smoke
+  Given Deploy_Prod finished
+  When the read-only smoke subset runs against https://<name>.runasp.net
+  Then sign-in page and health endpoint pass; no data is written to prod
+```
+
+_Source: docs/05-backlog.md (generated)_
+__PT_BODY__
+)
+issue PT-050 'PT-050: E2E regression suite as a release gate' 'epic:E11,feature:F11.1,testing,e2e,devops,mvp' 'Sprint 7' 5 "$body"
+body=$(cat <<'__PT_BODY__'
+**Story:** As a **developer**, I want a simple load test simulating 30 tablets and 5 dashboards, so that I know the free hosting is adequate.
+
+**Points:** 2 | **Sprint:** Sprint 7 | **Epic:** E11 Release Readiness | **Feature:** F11.1 Hardening and release
+
+**Notes:** Tool: k6 (free, runs locally). Keep the load small: the free plan has fair-use limits (docs/03).
+
+### Acceptance criteria
+
+```gherkin
+Scenario: Targets
+  Given the MonsterASP site (warm) and a local Release build
+  When the load test runs for 10 minutes
+  Then server-side p95 for scan/start/complete is under 500 ms, memory stays under the 256 MB limit, there are no errors, and the network round trip from the Philippines to the EU servers is recorded separately; results are attached to the sprint review
+```
+
+_Source: docs/05-backlog.md (generated)_
+__PT_BODY__
+)
+issue PT-051 'PT-051: Performance smoke test' 'epic:E11,feature:F11.1,testing,performance,mvp' 'Sprint 7' 2 "$body"
+body=$(cat <<'__PT_BODY__'
+**Story:** As a **developer**, I want dependency vulnerability checks and a basic OWASP review, so that known vulnerabilities are not shipped.
+
+**Points:** 3 | **Sprint:** Sprint 7 | **Epic:** E11 Release Readiness | **Feature:** F11.1 Hardening and release
+
+### Acceptance criteria
+
+```gherkin
+Scenario: Scan
+  Given the ci workflow
+  When it runs
+  Then dotnet list package --vulnerable runs and fails the build on High or Critical findings
+```
+
+_Source: docs/05-backlog.md (generated)_
+__PT_BODY__
+)
+issue PT-052 'PT-052: Security review and dependency scanning' 'epic:E11,feature:F11.1,security,devops,mvp' 'Sprint 7' 3 "$body"
+body=$(cat <<'__PT_BODY__'
+**Story:** As a **plant employee**, I want to sign in with my Google account, so that I don't need to remember another password.
+
+**Points:** 3 | **Sprint:** Sprint 7 | **Epic:** E11 Release Readiness | **Feature:** F11.1 Hardening and release
+
+**Notes:** Enabled by Auth:Google:Enabled. Consent screen in Testing status with listed test users (basic scopes only). No billing account is needed for an OAuth client.
+
+### Acceptance criteria
+
+```gherkin
+Scenario: New OAuth client
+  Given a new, billing-free Google Cloud project used only for this OAuth client (not find-an-agent)
+  When I create a Web OAuth client with redirect URIs https://localhost:5001/signin-google and https://<name>.runasp.net/signin-google
+  Then client ID and secret are stored in the server-only appsettings.Production.json and local user-secrets, never in the repo
+
+Scenario: Linked user
+  Given an Admin created my account with my Gmail address
+  When I choose Sign in with Google
+  Then the Google login is linked to my account and I get my Identity roles
+
+Scenario: Unknown user
+  Given no account exists for my Google email
+  When I choose Sign in with Google
+  Then access is denied with a message to contact an Admin and no user is created
+```
+
+_Source: docs/05-backlog.md (generated)_
+__PT_BODY__
+)
+issue PT-068 'PT-068: Optional Google sign-in linked to existing users' 'epic:E11,feature:F11.1,security,auth,google,mvp' 'Sprint 7' 3 "$body"
+body=$(cat <<'__PT_BODY__'
+**Story:** As a **developer**, I want a manual regression checklist for the MVP demo script, executed once for the v1.0 release as a GitHub issue created from a test-run issue template, so that I have a traceable release sign-off without paid tools.
+
+**Points:** 2 | **Sprint:** Sprint 7 | **Epic:** E11 Release Readiness | **Feature:** F11.1 Hardening and release
+
+**Notes:** Azure Test Plans (paid after a 30-day trial) is covered in the Phase 2 Azure DevOps migration (PT-073, docs/04 section 13.1).
+
+### Acceptance criteria
+
+```gherkin
+Scenario: Run executed
+  Given the test-run issue template with one checkbox per test case
+  When I run the checklist against the MonsterASP site
+  Then every case is ticked or linked to a bug issue, and the release issue links the run
+
+Scenario: Traceability
+  Given a failed case
+  When I create a bug
+  Then the bug issue references the PT story and the test-run issue
+```
+
+_Source: docs/05-backlog.md (generated)_
+__PT_BODY__
+)
+issue PT-070 'PT-070: Manual release regression run (GitHub test-run checklist)' 'epic:E11,feature:F11.1,testing,release,github,mvp' 'Sprint 7' 2 "$body"
+body=$(cat <<'__PT_BODY__'
+**Story:** As a **developer**, I want an IFileStorage/ISecretProvider contract test suite that the Local providers pass (and any future cloud provider must pass), plus a Docker image that runs the app locally, so that moving to an alternative host later is a configuration change, not a code change.
+
+**Points:** 2 | **Sprint:** Sprint 7 | **Epic:** E11 Release Readiness | **Feature:** F11.1 Hardening and release
+
+### Acceptance criteria
+
+```gherkin
+Scenario: Contract tests
+  Given the IFileStorage contract test suite
+  When it runs against the Local provider (and Azurite / fake GCS if an alternative is activated)
+  Then all providers pass the same tests, including paths with spaces and files up to 20 MB
+
+Scenario: Container
+  Given docker compose up
+  When I open http://localhost:8080
+  Then the app works with Cloud:Provider=Local, proving the build is host-independent
+```
+
+_Source: docs/05-backlog.md (generated)_
+__PT_BODY__
+)
+issue PT-056 'PT-056: Portability check: provider contract tests and a Docker run' 'epic:E11,feature:F11.1,portability,testing,docker,mvp' 'Sprint 7' 2 "$body"
+body=$(cat <<'__PT_BODY__'
+**Story:** As a **product owner**, I want the user guide updated with real screenshots and release notes for v1.0, so that plant staff can be trained.
+
+**Points:** 2 | **Sprint:** Sprint 7 | **Epic:** E11 Release Readiness | **Feature:** F11.1 Hardening and release
+
+### Acceptance criteria
+
+```gherkin
+Scenario: Docs
+  Given the MVP is feature complete
+  When I review docs/07-user-guide.md
+  Then every placeholder screenshot is replaced and each role section matches the app
+```
+
+_Source: docs/05-backlog.md (generated)_
+__PT_BODY__
+)
+issue PT-053 'PT-053: Finalize user guide and release notes for MVP' 'epic:E11,feature:F11.1,docs,mvp' 'Sprint 7' 2 "$body"
+body=$(cat <<'__PT_BODY__'
+**Story:** As a **product owner**, I want v1.0 deployed to prod with seed master data and a tagged release, so that the MVP is live for demonstration.
+
+**Points:** 3 | **Sprint:** Sprint 7 | **Epic:** E11 Release Readiness | **Feature:** F11.1 Hardening and release
+
+### Acceptance criteria
+
+```gherkin
+Scenario: Release
+  Given all MVP stories are Done
+  When I run the deploy workflow for the release commit
+  Then the app is live, a git tag v1.0.0 and a GitHub Release with notes exist and the runbook smoke checks pass
+```
+
+_Source: docs/05-backlog.md (generated)_
+__PT_BODY__
+)
+issue PT-054 'PT-054: MVP release to production' 'epic:E11,feature:F11.1,release,devops,mvp' 'Sprint 7' 3 "$body"
+body=$(cat <<'__PT_BODY__'
+**Story:** As a **developer**, I want Bicep for an Azure Container Apps (consumption) or App Service B1 environment with an Azure SQL free-offer database and managed identity, so that the app can move to Azure (e.g. Azure for Students) with a custom domain when needed.
+
+**Points:** 5 | **Sprint:** Sprint 8 | **Epic:** E12 Optional Alternative Hosting Targets (Azure, Google Cloud) | **Feature:** F12.1 Alternative targets and packages
+
+**Notes:** Blocked until an Azure subscription exists. Needs the Azure adapter project (Infrastructure.Azure).
+
+### Acceptance criteria
+
+```gherkin
+Scenario: Deploy
+  Given an Azure subscription (for example Azure for Students)
+  When I deploy infra/azure/main.bicep with dev.bicepparam
+  Then all resources are created without secrets in the templates and the SQL database uses the free offer with auto-pause
+
+Scenario: Teardown
+  Given I finish practising
+  When I delete the resource group
+  Then no billable resources remain
+```
+
+_Source: docs/05-backlog.md (generated)_
+__PT_BODY__
+)
+issue PT-057 'PT-057: Azure alternative: Bicep for Container Apps or App Service' 'epic:E12,feature:F12.1,devops,iac,azure,bicep,optional' 'Sprint 8' 5 "$body"
+body=$(cat <<'__PT_BODY__'
+**Story:** As a **developer**, I want the deploy workflow input deployTarget with monsterasp as default and jobs for the alternatives, so that I can practise multi-target delivery from one workflow.
+
+**Points:** 5 | **Sprint:** Sprint 8 | **Epic:** E12 Optional Alternative Hosting Targets (Azure, Google Cloud) | **Feature:** F12.1 Alternative targets and packages
+
+**Notes:** GCP template reuses the v0.2 design (Cloud Run, Terraform) kept in docs/03 appendix.
+
+### Acceptance criteria
+
+```gherkin
+Scenario: Default
+  Given I run the deploy workflow
+  When no input is changed
+  Then deployTarget defaults to monsterasp
+
+Scenario: Alternative
+  Given I run the workflow with deployTarget=azure (or gcp) and the target exists
+  When it runs
+  Then only the jobs for that target run (azure/login with OIDC federation, or google-github-actions/auth)
+```
+
+_Source: docs/05-backlog.md (generated)_
+__PT_BODY__
+)
+issue PT-058 'PT-058: Deploy target parameter: monsterasp | azure | gcp' 'epic:E12,feature:F12.1,devops,cd,optional' 'Sprint 8' 5 "$body"
+body=$(cat <<'__PT_BODY__'
+**Story:** As a **developer**, I want the Contracts package published to GitHub Packages (NuGet) by a workflow on version tags, so that I practise package management and future clients (MAUI) can consume the contracts.
+
+**Points:** 2 | **Sprint:** Sprint 8 | **Epic:** E12 Optional Alternative Hosting Targets (Azure, Google Cloud) | **Feature:** F12.1 Alternative targets and packages
+
+**Notes:** Azure Artifacts (2 GiB free) is the Phase 2 equivalent in docs/04 section 13.2.
+
+### Acceptance criteria
+
+```gherkin
+Scenario: Publish
+  Given a tag v1.1.0 on main
+  When the publish workflow runs with GITHUB_TOKEN (packages: write)
+  Then ProdTrack.Contracts 1.1.0 appears under the repo's Packages and old versions are pruned to stay under the 500 MB free storage
+```
+
+_Source: docs/05-backlog.md (generated)_
+__PT_BODY__
+)
+issue PT-071 'PT-071: Publish ProdTrack.Contracts as a NuGet package to GitHub Packages' 'epic:E12,feature:F12.1,devops,packages,optional' 'Sprint 8' 2 "$body"
+body=$(cat <<'__PT_BODY__'
+**Story:** As an **operator**, I want to identify myself on a shared station tablet by scanning my badge and entering a PIN, so that operators don't need a personal password sign-in on every shared tablet.
+
+**Points:** 8 | **Sprint:** Phase 2 | **Epic:** E13 Phase 2 and Later (not scheduled) | **Feature:** F13.1 Phase 2 candidates
+
+**Notes:** Needs a security design review.
+
+### Acceptance criteria
+
+```gherkin
+Scenario: Badge login
+  Given a tablet in kiosk mode signed in as a station device identity
+  When I scan my badge and enter my PIN
+  Then my actions are recorded under my user for 10 minutes of inactivity
+```
+
+_Source: docs/05-backlog.md (generated)_
+__PT_BODY__
+)
+issue PT-060 'PT-060: Shared-tablet kiosk mode with badge scan and PIN' 'epic:E13,feature:F13.1,phase-2,shopfloor,security' 'Phase 2' 8 "$body"
+body=$(cat <<'__PT_BODY__'
+**Story:** As an **operator**, I want scans and completions to be queued locally and synced when the connection returns, so that work is not blocked by Wi-Fi gaps.
+
+**Points:** 8 | **Sprint:** Phase 2 | **Epic:** E13 Phase 2 and Later (not scheduled) | **Feature:** F13.1 Phase 2 candidates
+
+### Acceptance criteria
+
+```gherkin
+Scenario: Queue
+  Given the tablet is offline
+  When I complete an operation
+  Then it is stored locally, marked Pending sync and sent in order when back online; conflicts are shown to a supervisor
+```
+
+_Source: docs/05-backlog.md (generated)_
+__PT_BODY__
+)
+issue PT-061 'PT-061: Offline queue for scans when Wi-Fi drops' 'epic:E13,feature:F13.1,phase-2,shopfloor,pwa' 'Phase 2' 8 "$body"
+body=$(cat <<'__PT_BODY__'
+**Story:** As a **supervisor**, I want a native mobile app with dashboard and push notifications, so that I can follow the floor when away from a PC.
+
+**Points:** 13 | **Sprint:** Phase 2 | **Epic:** E13 Phase 2 and Later (not scheduled) | **Feature:** F13.1 Phase 2 candidates
+
+### Acceptance criteria
+
+```gherkin
+Scenario: Dashboard
+  Given I open the MAUI app
+  When I sign in
+  Then I see the same KPIs as the web dashboard, reusing the Razor class library via Blazor Hybrid
+```
+
+_Source: docs/05-backlog.md (generated)_
+__PT_BODY__
+)
+issue PT-062 'PT-062: .NET MAUI mobile app for supervisors' 'epic:E13,feature:F13.1,phase-2,mobile,maui' 'Phase 2' 13 "$body"
+body=$(cat <<'__PT_BODY__'
+**Story:** As a **planner**, I want to send traveler labels to a thermal label printer (for example ZPL), so that we avoid manual printing steps.
+
+**Points:** 8 | **Sprint:** Phase 2 | **Epic:** E13 Phase 2 and Later (not scheduled) | **Feature:** F13.1 Phase 2 candidates
+
+**Notes:** Printer models to be confirmed.
+
+### Acceptance criteria
+
+```gherkin
+Scenario: Print
+  Given a configured printer
+  When I click Print label
+  Then the job is sent and its status recorded
+```
+
+_Source: docs/05-backlog.md (generated)_
+__PT_BODY__
+)
+issue PT-063 'PT-063: Print labels and travelers directly to industrial label printers' 'epic:E13,feature:F13.1,phase-2,printing' 'Phase 2' 8 "$body"
+body=$(cat <<'__PT_BODY__'
+**Story:** As a **planner**, I want to import orders instead of typing them, so that data entry errors drop.
+
+**Points:** 8 | **Sprint:** Phase 2 | **Epic:** E13 Phase 2 and Later (not scheduled) | **Feature:** F13.1 Phase 2 candidates
+
+**Notes:** No assumption is made about DMB's real ERP.
+
+### Acceptance criteria
+
+```gherkin
+Scenario: Import
+  Given a CSV in the documented format
+  When I upload it
+  Then valid rows become orders and invalid rows are listed with errors
+```
+
+_Source: docs/05-backlog.md (generated)_
+__PT_BODY__
+)
+issue PT-064 'PT-064: Import sales orders from CSV or an ERP API' 'epic:E13,feature:F13.1,phase-2,integration' 'Phase 2' 8 "$body"
+body=$(cat <<'__PT_BODY__'
+**Story:** As a **planner**, I want shift calendars per station and a capacity load chart, so that I can plan realistically and OEE uses real planned time.
+
+**Points:** 8 | **Sprint:** Phase 2 | **Epic:** E13 Phase 2 and Later (not scheduled) | **Feature:** F13.1 Phase 2 candidates
+
+### Acceptance criteria
+
+```gherkin
+Scenario: Load chart
+  Given shifts and released work
+  When I open capacity
+  Then I see load vs capacity per station per day
+```
+
+_Source: docs/05-backlog.md (generated)_
+__PT_BODY__
+)
+issue PT-065 'PT-065: Shift calendar and capacity view' 'epic:E13,feature:F13.1,phase-2,planning' 'Phase 2' 8 "$body"
+body=$(cat <<'__PT_BODY__'
+**Story:** As a **supervisor**, I want notifications when a work order goes on hold or becomes late, so that I react quickly.
+
+**Points:** 5 | **Sprint:** Phase 2 | **Epic:** E13 Phase 2 and Later (not scheduled) | **Feature:** F13.1 Phase 2 candidates
+
+### Acceptance criteria
+
+```gherkin
+Scenario: Notify
+  Given a work order goes on hold
+  When the event is raised
+  Then subscribed supervisors get a notification with a link
+```
+
+_Source: docs/05-backlog.md (generated)_
+__PT_BODY__
+)
+issue PT-066 'PT-066: Email/Teams notifications for holds and late jobs (needs paid hosting or external mail service)' 'epic:E13,feature:F13.1,phase-2,notifications' 'Phase 2' 5 "$body"
+body=$(cat <<'__PT_BODY__'
+**Story:** As an **IT administrator**, I want users to sign in with Microsoft Entra ID and get roles from app roles when Auth:Mode=Entra, so that a Microsoft-centric plant can manage access centrally.
+
+**Points:** 5 | **Sprint:** Phase 2 | **Epic:** E13 Phase 2 and Later (not scheduled) | **Feature:** F13.1 Phase 2 candidates
+
+**Notes:** Needs an Entra tenant that allows app registrations; whether Deo's Azure DevOps/Microsoft account directory allows this without a subscription is an open question in docs/00.
+
+### Acceptance criteria
+
+```gherkin
+Scenario: Entra mode
+  Given an app registration with app roles in an Entra tenant
+  When Auth:Mode=Entra and I sign in
+  Then my app role maps to the same policies as Identity roles and the rest of the app is unchanged
+```
+
+_Source: docs/05-backlog.md (generated)_
+__PT_BODY__
+)
+issue PT-069 'PT-069: Microsoft Entra ID sign-in as an alternative auth mode' 'epic:E13,feature:F13.1,phase-2,security,auth,entra' 'Phase 2' 5 "$body"
+body=$(cat <<'__PT_BODY__'
+**Story:** As a **developer**, I want the project mirrored or moved to Azure DevOps: backlog imported from backlog.csv, repo mirrored from GitHub, YAML pipelines running on a self-hosted agent and deploying to MonsterASP, optional Test Plans trial, so that I practise Azure DevOps hands-on for interviews while GitHub stays the day-to-day tool.
+
+**Points:** 8 | **Sprint:** Phase 2 | **Epic:** E13 Phase 2 and Later (not scheduled) | **Feature:** F13.1 Phase 2 candidates
+
+**Notes:** Full plan in docs/04 (Phase 2) and labs in docs/10.
+
+### Acceptance criteria
+
+```gherkin
+Scenario: Boards
+  Given an Azure DevOps project with the Scrum process and iterations Sprint 0-8
+  When I import backlog.csv
+  Then epics, features and PBIs appear with parent links and Effort
+
+Scenario: Pipelines
+  Given a self-hosted agent in the Default pool (the Microsoft-hosted free grant needs an Azure subscription with billing)
+  When I run azure-pipelines.yml
+  Then Build_Test and Deploy_Prod (with environment approval) succeed against the same MonsterASP site
+
+Scenario: Single deployer
+  Given both GitHub Actions and Azure Pipelines can deploy
+  When I switch
+  Then only one system holds the deploy secrets at a time, to avoid conflicting deployments
+```
+
+_Source: docs/05-backlog.md (generated)_
+__PT_BODY__
+)
+issue PT-073 'PT-073: Migrate or mirror to Azure DevOps (Boards, Repos, Pipelines on a self-hosted agent)' 'epic:E13,feature:F13.1,phase-2,azure-devops,devops' 'Phase 2' 8 "$body"
+
+echo "Done. Issues: 73"

@@ -1,0 +1,24 @@
+# Local SQL Server for development (optional; LocalDB works too). Usage:
+#   copy .env.example to .env and set MSSQL_SA_PASSWORD, then: docker compose up -d sql
+# Connection string (store with dotnet user-secrets, never commit):
+#   Server=localhost,1433;Database=ProdTrack;User Id=sa;Password=<MSSQL_SA_PASSWORD>;TrustServerCertificate=True
+services:
+  sql:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: prodtrack-sql
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_PID: Developer
+      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD:?Set MSSQL_SA_PASSWORD in .env}
+    ports:
+      - "1433:1433"
+    volumes:
+      - prodtrack-sql-data:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -C -Q 'SELECT 1' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+volumes:
+  prodtrack-sql-data:
