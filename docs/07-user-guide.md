@@ -219,3 +219,4 @@ Always SIGN OUT at shift end
 | 2026-09-26 | 0.1 | Initial user guide draft (placeholders) |
 | 2026-09-26 | 0.2 | Sign-in with ProdTrack accounts (optional Google), user administration, app addresses |
 | 2026-09-26 | 0.3 | Address `https://dmb-prodtrack.runasp.net` (MonsterASP free hosting, no test system; custom domain deferred); wake-up and reconnect notes; FAQ: Reconnecting, forgotten password (admin reset, no email), update page |
+| 2026-09-27 | 0.5 | The as-built user guide with real screenshots is `Documentations/ProdTrack-User-Guide.pdf` (this Markdown file remains the planning draft). |

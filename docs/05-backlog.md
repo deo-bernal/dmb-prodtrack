@@ -1549,7 +1549,7 @@ Status lives in the GitHub Projects board once imported. Until then, track statu
 | Key | Status | PR / Notes |
 |---|---|---|
 | PT-001 | In progress | Repo created and docs/scaffold pushed (feature/sprint-0-1). Projects board and issue import (`scripts/create-github-issues.sh`) are manual steps for Deo |
-| PT-002 | Done (pending first CI run) | `.github/workflows/ci.yml`: restore, format check, build -warnaserror, tests + coverage, idempotent migration script, publish artifact; no secrets needed. E2E job returns with PT-029 |
+| PT-002 | Done | `.github/workflows/ci.yml`: `build-test` job (restore, format check, build -warnaserror, unit + integration tests with coverage, vulnerable-package check; publish artifact + idempotent migration script on main) and `e2e` job (Playwright/Chromium); no secrets needed |
 | PT-003 | Done | Solution `ProdTrack.slnx` with Domain/Application/Infrastructure/Contracts/ApiClient/UI.Shared/ShopFloor/Server + test projects; architecture tests enforce layering |
 | PT-004 | Done | Serilog compact JSON rolling file (`App_Data/logs`), request logging, correlation id, ProblemDetails with traceId, `/health`, `/health/live`, `/health/ready` |
 | PT-005 | Done | Global exception handler, ProblemDetails for API, friendly error page for UI, validation errors (FluentValidation) |
@@ -1564,15 +1564,34 @@ Status lives in the GitHub Projects board once imported. Until then, track statu
 | PT-016 | Done | Reference data: ASME A13.1 colour schemes, ANSI Z535 signal words, materials (seeded, read API) |
 | PT-017 | Done | Reason codes (scrap/hold/downtime/rework) CRUD |
 | PT-047 | Done | Audit entries written in the same transaction as the change (`SaveChanges` interceptor-style, ADR-0011); viewer is PT-046 |
-| PT-014 | Partly done | Routings with ordered operations per product type, seeded v1 routings, read-only UI/API; routing editor deferred |
-| PT-018 | Not started | Sales order tables exist in the schema; UI/API deferred |
-| PT-019 | Partly done | Work orders created directly from a product (number sequence WO-yyyy-nnnnnn), list/filter/paging, update, delete while Draft; link to sales order lines deferred |
+| PT-014 | Done | Routings per product type with versioning; routing editor (`/routings/{type}/edit`) saves a new version (add/remove/reorder steps, station, setup and standard minutes, overlap flag); released work orders keep their snapshot |
+| PT-018 | Done | Sales orders with lines (CRUD, cancel), API `/api/v1/sales-orders` with ETag/If-Match, Blazor list/new/detail/edit pages |
+| PT-019 | Done | Work orders from a product or generated from sales order lines (`POST /sales-orders/{id}/work-orders`, one Draft WO per line, lines that already have a WO are skipped); WO links back to its SO line |
 | PT-020 | Done | Release copies routing operations to the work order (requires approved artwork where needed) |
 | PT-023 | Done | Artwork upload/download via local file storage abstraction (`IFileStorage`, `App_Data/files`), size/type checks |
 | PT-024 | Done | Artwork approve/reject with comment; release blocked until approved |
-| PT-041 | Partly done | Basic dashboard: KPI tiles + WIP by station (API `dashboard/wip`), 30 s refresh; live SignalR updates deferred |
-| PT-021 | Partly done | Planner work order list with filters; SignalR hub `/hubs/production` and notifier in place |
-| PT-029 | Not started | E2E removed from CI until implemented |
+| PT-041 | Done | Dashboard KPI tiles (WIP, late, completed/good/scrap/scrap rate today) + WIP by station, refreshed live from SignalR `OperationChanged` events (debounced); 30 s polling removed |
+| PT-021 | Done | Planner work order list with status/text filters and paging; work order detail refreshes live via SignalR |
+| PT-029 | Done | `tests/ProdTrack.E2E.Tests` (Playwright for .NET, Chromium): in-process Kestrel host + SQLite in-memory; sign-in with forced password change, create + release a work order, run an operation on /floor, scan box. Runs locally (`dotnet test`) and in the CI `e2e` job; browsers installed user-locally |
+| PT-011 | Partly done | Shop-floor PWA uses the same Identity cookie sign-in (back-office sign-in page); badge/PIN sign-in deferred |
+| PT-012 | Done | Admin user administration (`/admin/users`): create, edit (name, employee no., badge, roles), disable/enable, reset password (forces change at next sign-in); API `/api/v1/users` with If-Match on the concurrency stamp |
+| PT-022 | Done | Hold (Hold reason code + note), resume (back to the status before the hold), cancel (reason) for work orders; audit-logged, If-Match honoured; held/cancelled WOs block floor execution |
+| PT-025 | Done | Printable traveler page (`/work-orders/{id}/traveler`) with QR codes (QRCoder, MIT, SVG) for the work order and each operation; `GET /work-orders/{id}/traveler`. Browser print/Save as PDF instead of server-side PDF |
+| PT-026 | Not started | Reprint audit deferred |
+| PT-027 | Done | /floor PWA shell with station picker (remembered in localStorage) and station queue |
+| PT-028 | Done | Scan box: camera via `BarcodeDetector` where supported, keyboard-wedge scanners and manual entry fallback; `GET /api/v1/scan/{code}` resolves WO or `OP:{wo}:{seq}` codes |
+| PT-030 | Done | Station queue (`GET /api/v1/stations/{code}/queue`), Ready/InProgress/Paused operations of released work orders |
+| PT-031 | Done | Start operation (from queue or scan), records operator and start time |
+| PT-032 | Done | Pause with reason code (Pause category) and resume |
+| PT-033 | Done | Complete with good quantity; next step becomes Ready with the good quantity; last step completes the work order |
+| PT-034 | Done | Scrap logging with Scrap reason codes and quantity; scrap KPIs on the dashboard |
+| PT-035 | Done | QC checklist templates per product type (seeded, read-only page `/qc/templates`); template editor deferred |
+| PT-036 | Done | Record QC inspection (pass/fail and measured items with tolerances) at inspection steps; completion requires a passed inspection |
+| PT-037 | Partly done | Failed inspection puts the work order on hold with reason QC-FAIL; rework routing deferred |
+| PT-072 | Partly done | /floor SignalR client reconnects automatically; cold-start banner deferred |
+| — | Done | Optimistic concurrency: rowversion on aggregates, ETag on GET, `If-Match` on PUT/state changes; stale ETag -> 412 `Concurrency.StaleVersion`, lost race -> 409 `Concurrency.Conflict`; edit pages show a "reload latest" prompt |
+| — | Done | Local-first database: LocalDB default, migration `Sprint23Execution`, `Database:MigrateOnStartup` applies migrations + seeds on startup in Development |
+| PT-038..PT-040, PT-042..PT-046, PT-048, PT-049 | Not started | Materials/inventory, late-jobs list, throughput charts, timeline, downtime, OEE-lite, audit viewer, low-stock alert |
 
 Add rows as work begins. When a story is finished, close the issue (Done on the board) and update this table in the same PR.
 
@@ -1585,3 +1604,4 @@ Add rows as work begins. When a story is finished, close the issue (Done on the 
 | 2026-09-26 | v0.3: hosting moved to the free MonsterASP.NET plan. Rewritten: PT-003 (no cloud adapter projects), PT-004 (Serilog rolling file), PT-006 (local env + MonsterASP publish config), PT-007 (CD via FTP/lftp + migrations + approval), PT-008 (Web Deploy variant + rollback), PT-009 (bootstrap password from server config), PT-023 (local file storage), PT-029/PT-050 (E2E against the app on the agent), PT-051, PT-056, PT-068. Repurposed IDs: PT-055 (GCP budget -> MonsterASP account/site/DB setup), PT-059 (WIF -> self-hosted agent, moved to Sprint 0), PT-067 (dev custom domain -> ops runbook: HTTPS renewal/backup export). New PT-072 (reconnect/cold-start UX, Sprint 5). E12 is now optional Azure/GCP targets. No IDs deleted; MVP stays 195 points. |
 | 2026-09-26 | v0.3 (GitHub primary): PT-001 (GitHub repo, Projects, issue import script), PT-002 (CI workflow), PT-007 (deploy workflow, Web Deploy from windows-latest), PT-008 (FTP alternative from ubuntu + rollback), PT-029/PT-050/PT-054 (Actions), PT-059 repurposed again (self-hosted agent -> repository guardrails on GitHub Free), PT-067 (scheduled ops workflow, encrypted bacpac artifact), PT-070 (Azure Test Plans -> GitHub test-run checklist), PT-071 (Azure Artifacts -> GitHub Packages); new Phase 2 PT-073 (migrate/mirror to Azure DevOps). New outputs: backlog-github-issues.csv and repo-scaffold/scripts/create-github-issues.sh. |
 | 2026-09-27 | Status table filled for the Sprint 0-1 implementation (branch `feature/sprint-0-1`). |
+| 2026-09-27 | Status updated for the Sprint 2-3 batch (branch `feature/sprint-2-3`, PR #2): sales orders, user admin, hold/cancel, concurrency, routing editor, traveler + QR, floor scanning and execution, QC, scrap, live dashboard, Playwright E2E. |

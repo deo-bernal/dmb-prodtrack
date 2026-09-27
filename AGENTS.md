@@ -31,6 +31,8 @@ You are working on **DMB ProdTrack**, a practice .NET 10 application (production
 dotnet restore
 dotnet build ProdTrack.slnx -warnaserror
 dotnet test ProdTrack.slnx --filter "Category!=E2E"        # SQLite in-memory, no Docker needed (ADR-0010)
+dotnet test tests/ProdTrack.E2E.Tests                       # Playwright/Chromium E2E (first run downloads Chromium user-locally)
+dotnet ef database drop -f -p src/ProdTrack.Infrastructure -s src/ProdTrack.Server   # reset local DB (Development re-migrates + seeds on next run)
 dotnet format ProdTrack.slnx --verify-no-changes
 dotnet tool restore                                         # dotnet-ef (local tool manifest)
 dotnet ef migrations add <Name> -p src/ProdTrack.Infrastructure -s src/ProdTrack.Server -o Persistence/Migrations

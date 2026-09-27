@@ -124,3 +124,4 @@ Bug work item (Scrum process) with severity (1-Critical to 4-Low), repro steps, 
 | 2026-09-26 | 0.3 | MonsterASP free hosting: Local + Prod environments, E2E on the self-hosted agent, smoke on runasp.net with cold-start retries, contract tests Local by default, perf targets for the free plan, reconnect checklist, Test Plans optional |
 | 2026-09-26 | 0.3b | E2E in the GitHub `ci` workflow (SQL Server service container); release regression via GitHub test-run issue (Azure Test Plans Phase 2) |
 | 2026-09-27 | 0.4 | Implementation: integration tests on SQLite in-memory (ADR-0010) instead of Testcontainers for Sprint 0-1; story traits `Story=PT-xxx` and `Category=Unit|Integration|Architecture` in use |
+| 2026-09-27 | 0.5 | Playwright E2E project `tests/ProdTrack.E2E.Tests` added (PT-029): in-process Kestrel + SQLite in-memory, headless Chromium, runs locally and in the CI `e2e` job; SQLite rowversion emulation for concurrency tests. |
