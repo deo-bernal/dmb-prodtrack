@@ -40,6 +40,7 @@ internal static class SecuritySetup
         }
 
         services.AddProdTrackIdentityStores();
+        services.AddProdTrackUserAdministration();
         services.Configure<SecurityStampValidatorOptions>(o => o.ValidationInterval = TimeSpan.FromMinutes(30));
         services.ConfigureApplicationCookie(options =>
         {

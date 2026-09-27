@@ -2,7 +2,7 @@ using ProdTrack.Domain.Common;
 
 namespace ProdTrack.Server.Errors;
 
-/// <summary>Maps Result errors to ProblemDetails: 400/403/404/409/422 with a stable <c>code</c> (docs/02 section 11).</summary>
+/// <summary>Maps Result errors to ProblemDetails: 400/403/404/409/412/422 with a stable <c>code</c> (docs/02 section 11).</summary>
 internal static class ResultHttpExtensions
 {
     public static IResult ToProblem(this Error error)
@@ -21,6 +21,7 @@ internal static class ResultHttpExtensions
         {
             ErrorType.NotFound => StatusCodes.Status404NotFound,
             ErrorType.Conflict => StatusCodes.Status409Conflict,
+            ErrorType.PreconditionFailed => StatusCodes.Status412PreconditionFailed,
             ErrorType.Forbidden => StatusCodes.Status403Forbidden,
             ErrorType.BusinessRule => StatusCodes.Status422UnprocessableEntity,
             _ => StatusCodes.Status400BadRequest,

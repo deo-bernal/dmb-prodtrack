@@ -13,20 +13,21 @@ using ProdTrack.Contracts.Routings;
 using ProdTrack.Contracts.Stations;
 using ProdTrack.Contracts.WorkOrders;
 using ProdTrack.Domain.Products;
+using ProdTrack.Server.Errors;
 
 namespace ProdTrack.Server.Endpoints;
 
 /// <summary>Hand-written mapping between Application models and wire contracts (docs/02 section 4.1).</summary>
-internal static class ContractMappings
+internal static partial class ContractMappings
 {
-    public static StationDto ToDto(this StationModel m) => new(m.Id, m.Code, m.Name, m.Type.ToString(), m.WorkCenter, m.IsActive);
+    public static StationDto ToDto(this StationModel m) => new(m.Id, m.Code, m.Name, m.Type.ToString(), m.WorkCenter, m.IsActive, ETags.Format(m.Version));
 
-    public static ReasonCodeDto ToDto(this ReasonCodeModel m) => new(m.Id, m.Code, m.Description, m.Category.ToString(), m.IsActive);
+    public static ReasonCodeDto ToDto(this ReasonCodeModel m) => new(m.Id, m.Code, m.Description, m.Category.ToString(), m.IsActive, ETags.Format(m.Version));
 
     public static ReferenceItemDto ToDto(this ReferenceItemModel m) => new(m.Code, m.Name, m.TextColor, m.BackgroundColor);
 
     public static ProductDto ToDto(this ProductModel m) =>
-        new(m.Id, m.Sku, m.Name, m.ProductType.ToString(), m.RequiresArtworkApproval, m.IsActive, m.Spec.ToDto());
+        new(m.Id, m.Sku, m.Name, m.ProductType.ToString(), m.RequiresArtworkApproval, m.IsActive, m.Spec.ToDto(), ETags.Format(m.Version));
 
     public static ProductSpecDto ToDto(this ProductSpec s) => new()
     {
@@ -102,11 +103,19 @@ internal static class ContractMappings
         m.RoutingVersion,
         m.CreatedAtUtc,
         m.ReleasedAtUtc,
-        [.. m.Operations.Select(o => new OperationDto(o.Id, o.Sequence, o.StationId, o.StationCode, o.Status.ToString(), o.InputQuantity, o.GoodQuantity, o.ScrapQuantity))],
-        [.. m.ArtworkProofs.Select(p => p.ToDto())]);
+        [.. m.Operations.Select(o => new OperationDto(o.Id, o.Sequence, o.StationId, o.StationCode, o.Status.ToString(), o.InputQuantity, o.GoodQuantity, o.ScrapQuantity, o.StationName, o.StartedAtUtc, o.CompletedAtUtc, o.StartedBy))],
+        [.. m.ArtworkProofs.Select(p => p.ToDto())],
+        m.HoldReason,
+        m.CancelReason,
+        m.SalesOrderId,
+        m.SalesOrderNumber,
+        ETags.Format(m.Version));
 
     public static DashboardSummaryDto ToDto(this DashboardSummaryModel m) => new(
         m.WorkOrdersByStatus.ToDictionary(kv => kv.Key.ToString(), kv => kv.Value, StringComparer.Ordinal),
         m.LateCount,
-        [.. m.WipByStation.Select(s => new StationWipDto(s.StationId, s.StationCode, s.StationName, s.IsActive, s.Ready, s.InProgress, s.Paused, s.Pending))]);
+        [.. m.WipByStation.Select(s => new StationWipDto(s.StationId, s.StationCode, s.StationName, s.IsActive, s.Ready, s.InProgress, s.Paused, s.Pending))],
+        m.CompletedToday,
+        m.ScrapUnitsToday,
+        m.GoodUnitsToday);
 }

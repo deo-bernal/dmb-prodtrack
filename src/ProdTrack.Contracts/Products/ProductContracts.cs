@@ -35,7 +35,7 @@ public sealed record ProductSpecDto
 }
 
 /// <summary>Catalog product. ProductType: PipeMarker|ValveTag|SafetySign|Label.</summary>
-public sealed record ProductDto(int Id, string Sku, string Name, string ProductType, bool RequiresArtworkApproval, bool IsActive, ProductSpecDto Spec);
+public sealed record ProductDto(int Id, string Sku, string Name, string ProductType, bool RequiresArtworkApproval, bool IsActive, ProductSpecDto Spec, string? Version = null);
 
 public sealed record CreateProductRequest(string Sku, string Name, string ProductType, bool RequiresArtworkApproval, ProductSpecDto Spec);
 

@@ -37,16 +37,26 @@ internal static class StationEndpoints
             .Produces<StationDto>(StatusCodes.Status201Created)
             .ProducesValidationProblem();
 
-        group.MapPut("/{id:int}", async (IDispatcher dispatcher, int id, UpdateStationRequest request, CancellationToken ct) =>
+        group.MapPut("/{id:int}", async (HttpContext http, IDispatcher dispatcher, int id, UpdateStationRequest request, CancellationToken ct) =>
             {
+                var version = ETags.ReadVersion(http.Request);
+                if (version.IsFailure)
+                {
+                    return version.Error!.ToProblem();
+                }
+
                 var type = EnumBinding.Parse<StationType>(request.Type, "type");
                 if (type.IsFailure)
                 {
                     return type.Error!.ToProblem();
                 }
 
-                var result = await dispatcher.SendAsync(new UpdateStationCommand(id, request.Name, type.Value, request.WorkCenter, request.IsActive), ct);
-                return result.ToHttp(s => TypedResults.Ok(s.ToDto()));
+                var result = await dispatcher.SendAsync(new UpdateStationCommand(id, request.Name, type.Value, request.WorkCenter, request.IsActive, version.Value), ct);
+                return result.ToHttp(s =>
+                {
+                    ETags.Set(http.Response, s.Version);
+                    return TypedResults.Ok(s.ToDto());
+                });
             })
             .RequireAuthorization(Policies.ManageMasterData)
             .Produces<StationDto>()

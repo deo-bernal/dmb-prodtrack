@@ -44,9 +44,21 @@ internal static class ReasonCodeEndpoints
             .Produces<ReasonCodeDto>(StatusCodes.Status201Created)
             .ProducesValidationProblem();
 
-        group.MapPut("/{id:int}", async (IDispatcher dispatcher, int id, UpdateReasonCodeRequest request, CancellationToken ct) =>
-                (await dispatcher.SendAsync(new UpdateReasonCodeCommand(id, request.Description, request.IsActive), ct))
-                    .ToHttp(r => TypedResults.Ok(r.ToDto())))
+        group.MapPut("/{id:int}", async (HttpContext http, IDispatcher dispatcher, int id, UpdateReasonCodeRequest request, CancellationToken ct) =>
+            {
+                var version = ETags.ReadVersion(http.Request);
+                if (version.IsFailure)
+                {
+                    return version.Error!.ToProblem();
+                }
+
+                return (await dispatcher.SendAsync(new UpdateReasonCodeCommand(id, request.Description, request.IsActive, version.Value), ct))
+                    .ToHttp(r =>
+                    {
+                        ETags.Set(http.Response, r.Version);
+                        return TypedResults.Ok(r.ToDto());
+                    });
+            })
             .RequireAuthorization(Policies.ManageMasterData)
             .Produces<ReasonCodeDto>()
             .ProducesProblem(StatusCodes.Status404NotFound);

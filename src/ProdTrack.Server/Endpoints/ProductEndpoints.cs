@@ -30,8 +30,12 @@ internal static class ProductEndpoints
             .RequireAuthorization(Policies.ReadAll)
             .Produces<List<ProductDto>>();
 
-        group.MapGet("/{id:int}", async (IDispatcher dispatcher, int id, CancellationToken ct) =>
-                (await dispatcher.QueryAsync(new GetProductQuery(id), ct)).ToHttp(p => TypedResults.Ok(p.ToDto())))
+        group.MapGet("/{id:int}", async (HttpContext http, IDispatcher dispatcher, int id, CancellationToken ct) =>
+                (await dispatcher.QueryAsync(new GetProductQuery(id), ct)).ToHttp(p =>
+                {
+                    ETags.Set(http.Response, p.Version);
+                    return TypedResults.Ok(p.ToDto());
+                }))
             .RequireAuthorization(Policies.ReadAll)
             .Produces<ProductDto>()
             .ProducesProblem(StatusCodes.Status404NotFound);
@@ -51,13 +55,26 @@ internal static class ProductEndpoints
             .Produces<ProductDto>(StatusCodes.Status201Created)
             .ProducesValidationProblem();
 
-        group.MapPut("/{id:int}", async (IDispatcher dispatcher, int id, UpdateProductRequest request, CancellationToken ct) =>
-                (await dispatcher.SendAsync(new UpdateProductCommand(id, request.Name, request.RequiresArtworkApproval, request.Spec.ToDomain(), request.IsActive), ct))
-                    .ToHttp(p => TypedResults.Ok(p.ToDto())))
+        group.MapPut("/{id:int}", async (HttpContext http, IDispatcher dispatcher, int id, UpdateProductRequest request, CancellationToken ct) =>
+            {
+                var version = ETags.ReadVersion(http.Request);
+                if (version.IsFailure)
+                {
+                    return version.Error!.ToProblem();
+                }
+
+                var command = new UpdateProductCommand(id, request.Name, request.RequiresArtworkApproval, request.Spec.ToDomain(), request.IsActive, version.Value);
+                return (await dispatcher.SendAsync(command, ct)).ToHttp(p =>
+                {
+                    ETags.Set(http.Response, p.Version);
+                    return TypedResults.Ok(p.ToDto());
+                });
+            })
             .RequireAuthorization(Policies.ManageProductsAndRoutings)
             .Produces<ProductDto>()
             .ProducesValidationProblem()
-            .ProducesProblem(StatusCodes.Status404NotFound);
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status412PreconditionFailed);
 
         return api;
     }

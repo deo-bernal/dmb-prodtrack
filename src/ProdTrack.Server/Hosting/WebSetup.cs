@@ -29,6 +29,7 @@ internal static class WebSetup
         services.AddScoped<UseCaseDispatcher>();
 
         services.AddSignalR();
+        services.AddSingleton<IRealtimeFeed, RealtimeFeed>();
         services.AddScoped<INotifier, SignalRNotifier>();
 
         services.AddOpenApi();
