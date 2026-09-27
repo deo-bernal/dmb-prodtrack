@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
+  <!-- Shop-floor PWA (Blazor WebAssembly), served by ProdTrack.Server under /floor (same-origin cookie session). -->
+  <PropertyGroup>
+    <StaticWebAssetBasePath>floor</StaticWebAssetBasePath>
+    <ServiceWorkerAssetsManifest>service-worker-assets.js</ServiceWorkerAssetsManifest>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" PrivateAssets="all" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\ProdTrack.ApiClient\ProdTrack.ApiClient.csproj" />
+    <ProjectReference Include="..\ProdTrack.UI.Shared\ProdTrack.UI.Shared.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <ServiceWorker Include="wwwroot\service-worker.js" PublishedContent="wwwroot\service-worker.published.js" />
+  </ItemGroup>
+</Project>

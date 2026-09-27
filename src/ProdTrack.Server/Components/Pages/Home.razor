@@ -1,0 +1,82 @@
+@page "/"
+@attribute [Authorize(Policy = Policies.ReadAll)]
+@rendermode InteractiveServer
+@implements IDisposable
+@using ProdTrack.Application.Dashboard
+@using ProdTrack.Application.Dashboard.GetDashboardSummary
+@using ProdTrack.Domain.WorkOrders
+@inject UseCaseDispatcher Dispatcher
+
+<PageTitle>Dashboard · ProdTrack</PageTitle>
+
+<div class="d-flex align-items-center mb-3">
+    <h1 class="me-auto">Dashboard</h1>
+    <button class="btn btn-outline-secondary btn-sm" @onclick="LoadAsync">Refresh</button>
+</div>
+
+<ErrorAlert Error="error" />
+
+@if (summary is null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <div class="row g-3 mb-4">
+        @foreach (var status in DisplayStatuses)
+        {
+            <div class="col-6 col-md-2">
+                <KpiTile Title="@status.ToString()" Value="@Count(status).ToString(System.Globalization.CultureInfo.InvariantCulture)" TestId="@status.ToString().ToLowerInvariant()" />
+            </div>
+        }
+        <div class="col-6 col-md-2">
+            <KpiTile Title="Late" Value="@summary.LateCount.ToString(System.Globalization.CultureInfo.InvariantCulture)" TestId="late" />
+        </div>
+    </div>
+
+    <h2 class="h4">WIP by station</h2>
+    <table class="table table-sm table-striped" data-testid="wip-table">
+        <thead>
+            <tr><th>Station</th><th class="text-end">Ready</th><th class="text-end">In progress</th><th class="text-end">Paused</th><th class="text-end">Pending</th></tr>
+        </thead>
+        <tbody>
+            @foreach (var s in summary.WipByStation)
+            {
+                <tr class="@(s.IsActive ? string.Empty : "text-muted")">
+                    <td>@s.StationCode · @s.StationName @(s.IsActive ? string.Empty : "(inactive)")</td>
+                    <td class="text-end">@s.Ready</td>
+                    <td class="text-end">@s.InProgress</td>
+                    <td class="text-end">@s.Paused</td>
+                    <td class="text-end">@s.Pending</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    <p class="text-muted small">Refreshes automatically every 30 seconds.</p>
+}
+
+@code {
+    private static readonly WorkOrderStatus[] DisplayStatuses =
+        [WorkOrderStatus.Draft, WorkOrderStatus.Released, WorkOrderStatus.InProgress, WorkOrderStatus.OnHold, WorkOrderStatus.Completed];
+
+    private DashboardSummaryModel? summary;
+    private Error? error;
+    private Timer? timer;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+        timer = new Timer(_ => InvokeAsync(LoadAsync), null, TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(30));
+    }
+
+    private int Count(WorkOrderStatus status) => summary!.WorkOrdersByStatus.TryGetValue(status, out var count) ? count : 0;
+
+    private async Task LoadAsync()
+    {
+        var result = await Dispatcher.QueryAsync(new GetDashboardSummaryQuery());
+        (summary, error) = result.IsSuccess ? (result.Value, null) : (summary, result.Error);
+        StateHasChanged();
+    }
+
+    public void Dispose() => timer?.Dispose();
+}

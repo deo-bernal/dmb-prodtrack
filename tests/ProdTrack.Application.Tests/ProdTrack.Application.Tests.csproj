@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Use-case tests through the real dispatcher (authorization + validation decorators) on SQLite in-memory. -->
+  <ItemGroup>
+    <ProjectReference Include="..\ProdTrack.TestSupport\ProdTrack.TestSupport.csproj" />
+  </ItemGroup>
+</Project>

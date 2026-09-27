@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Shared test helpers: SQLite in-memory AppDbContext (no SQL Server/Docker needed), fakes for host services. -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\ProdTrack.Infrastructure\ProdTrack.Infrastructure.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
+    <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" />
+  </ItemGroup>
+</Project>

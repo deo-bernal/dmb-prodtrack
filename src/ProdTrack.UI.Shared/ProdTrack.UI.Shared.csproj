@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+  <!-- Shared Razor components (status badges, KPI tiles) for the back office and the shop-floor PWA. -->
+  <ItemGroup>
+    <SupportedPlatform Include="browser" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Components.Web" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\ProdTrack.Contracts\ProdTrack.Contracts.csproj" />
+  </ItemGroup>
+</Project>

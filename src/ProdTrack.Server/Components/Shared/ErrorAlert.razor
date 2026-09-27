@@ -1,0 +1,23 @@
+@if (Error is not null)
+{
+    <div class="alert alert-danger" role="alert" data-testid="error-alert">
+        <strong>@Error.Message</strong>
+        @if (Error is ValidationError validation)
+        {
+            <ul class="mb-0">
+                @foreach (var (field, messages) in validation.Errors)
+                {
+                    @foreach (var message in messages)
+                    {
+                        <li>@field: @message</li>
+                    }
+                }
+            </ul>
+        }
+    </div>
+}
+
+@code {
+    [Parameter]
+    public Error? Error { get; set; }
+}

@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\ProdTrack.Domain\ProdTrack.Domain.csproj" />
+  </ItemGroup>
+</Project>

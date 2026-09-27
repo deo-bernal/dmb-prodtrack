@@ -1,0 +1,17 @@
+<div class="card text-center h-100" data-testid="kpi-@TestId">
+    <div class="card-body">
+        <div class="display-6 fw-bold">@Value</div>
+        <div class="text-muted">@Title</div>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public string Title { get; set; } = string.Empty;
+
+    [Parameter, EditorRequired]
+    public string Value { get; set; } = string.Empty;
+
+    [Parameter]
+    public string TestId { get; set; } = "tile";
+}

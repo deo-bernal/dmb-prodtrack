@@ -1,0 +1,68 @@
+@page "/products"
+@attribute [Authorize(Policy = Policies.ReadAll)]
+@rendermode InteractiveServer
+@using ProdTrack.Application.Products
+@using ProdTrack.Application.Products.GetProducts
+@using ProdTrack.Domain.Products
+@inject UseCaseDispatcher Dispatcher
+
+<PageTitle>Products · ProdTrack</PageTitle>
+<div class="d-flex align-items-center mb-3">
+    <h1 class="me-auto">Products</h1>
+    <AuthorizeView Policy="@Policies.ManageProductsAndRoutings">
+        <a class="btn btn-primary" href="products/new">New product</a>
+    </AuthorizeView>
+</div>
+
+<div class="row g-2 mb-3">
+    <div class="col-md-4">
+        <input class="form-control" placeholder="Search SKU or name" @bind="search" @bind:after="LoadAsync" />
+    </div>
+    <div class="col-md-3">
+        <select class="form-select" @bind="typeFilter" @bind:after="LoadAsync" aria-label="Product type">
+            <option value="">All types</option>
+            @foreach (var t in Enum.GetValues<ProductType>())
+            {
+                <option value="@t">@t</option>
+            }
+        </select>
+    </div>
+</div>
+
+<ErrorAlert Error="error" />
+<table class="table table-striped" data-testid="products-table">
+    <thead><tr><th>SKU</th><th>Name</th><th>Type</th><th>Artwork approval</th><th>Status</th></tr></thead>
+    <tbody>
+        @foreach (var p in products)
+        {
+            <tr>
+                <td><a href="products/@p.Id">@p.Sku</a></td>
+                <td>@p.Name</td>
+                <td>@p.ProductType</td>
+                <td>@(p.RequiresArtworkApproval ? "Required" : "No")</td>
+                <td>@(p.IsActive ? "Active" : "Inactive")</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@code {
+    private IReadOnlyList<ProductModel> products = [];
+    private string? search;
+    private string typeFilter = string.Empty;
+    private Error? error;
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        ProductType? type = Enum.TryParse<ProductType>(typeFilter, out var parsed) ? parsed : null;
+        var result = await Dispatcher.QueryAsync(new GetProductsQuery(type, search, IncludeInactive: true));
+        if (result.IsSuccess)
+        {
+            products = result.Value;
+        }
+
+        error = result.Error;
+    }
+}

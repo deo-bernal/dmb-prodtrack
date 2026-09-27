@@ -1,0 +1,21 @@
+---
+description: Rules for GitHub Actions workflows, deployment files, Azure Pipelines (Phase 2), Bicep, Docker files
+globs: .github/workflows/*.yml, .github/dependabot.yml, deploy/**, scripts/**, azure-pipelines.yml, pipelines/**/*.yml, infra/**/*.bicep, infra/**/*.bicepparam, **/Dockerfile, docker-compose*.yml
+alwaysApply: false
+---
+
+# CI/CD and infrastructure
+
+- **Workflows** (`.github/workflows/`, documented in `docs/11` section 6):
+  - `ci.yml`: PRs + pushes to `main` on `ubuntu-latest`: restore (locked), format check, build `-warnaserror`, unit/integration tests, coverage, vulnerable-package check, `e2e` job with a SQL Server service container. On `main` it publishes the `prodtrack-drop` artifact (win-x86 framework-dependent publish, idempotent `migrations.sql`, `deploy/app_offline.htm`). Job names `build-test` and `e2e` are the required checks - keep them stable.
+  - `deploy.yml`: deploys only a successful `ci` run of `main` (`workflow_dispatch`, optional `ci_run_id` for rollback, input `deployTarget`). Default Web Deploy (msdeploy) from `windows-latest` with the AppOffline rule; alternative FTP (lftp) from `ubuntu-latest` with `app_offline.htm` (`DEPLOY_METHOD=ftp`). Order: migrations script -> code sync -> smoke test `/health/ready` with retries (cold start). `concurrency: deploy-production`, environment `production`. `workflow_run` auto-deploy only when `AUTO_DEPLOY=true` (public repo / Pro with a required reviewer).
+  - `ops.yml`: weekly cert expiry (< 21 days fails), DB size, gpg-encrypted bacpac artifact.
+- **Never exclude/overwrite on the server:** `App_Data/`, `logs/`, `appsettings.Production.json`, `app_offline.htm` (skip rules / lftp excludes).
+- **Secrets:** only GitHub Actions secrets/variables (names in `docs/11` section 5), mapped via `env:`; never inline, echo or upload them in artifacts unencrypted; least-privilege `permissions:` per workflow; pin actions to a major version (Dependabot updates them); no `pull_request_target` with checkout of PR code.
+- **Minutes budget:** 2,000 free minutes/month on the private repo (Windows jobs may count more). Use path filters, caching, `concurrency` with cancel-in-progress for PRs, short artifact retention; avoid matrices unless needed. Estimate the impact in `docs/11` section 8 when adding jobs.
+- **Migrations:** idempotent EF script generated in CI and applied by the deploy workflow before the code; forward-only, expand/contract. No `MigrateOnStartup` in prod.
+- **No Terraform by default.** Bicep (`infra/azure`) and the Azure/GCP deploy jobs exist only for the optional Sprint 8 alternatives (GitHub OIDC, no stored cloud keys).
+- **Azure Pipelines** (`azure-pipelines.yml`, `pipelines/`) are Phase 2 only (`docs/04`, self-hosted agent). Keep them equivalent to the GitHub workflows if they are added.
+- **Docker** is for local SQL Server and the optional portability check (PT-056); the MonsterASP deploy does not use containers.
+- Do not run deployments, the `ops` workflow, mutating `gh`/`az`/`gcloud` commands, or change repo settings/secrets yourself unless the user explicitly asks. Never touch `dmbwebsolutions.com` DNS or GCP project `find-an-agent`.
+- Update `docs/11` (workflows, secrets), `docs/08` (deployment/ops runbook) and `docs/03` (costs/limits) in the same change.

@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <!-- Composition root: REST API, SignalR hub, Blazor back office, hosts the ShopFloor PWA under /floor. IIS InProcess. -->
+  <PropertyGroup>
+    <UserSecretsId>prodtrack-server-6f1c2a3e-8a4b-4d7e-9c1f-2b5d7e9a0c11</UserSecretsId>
+    <AspNetCoreHostingModel>InProcess</AspNetCoreHostingModel>
+    <BlazorDisableThrowNavigationException>true</BlazorDisableThrowNavigationException>
+    <!-- Free MonsterASP plan: 256 MB RAM (docs/02 section 14). -->
+    <ServerGarbageCollection>false</ServerGarbageCollection>
+    <ConcurrentGarbageCollection>false</ConcurrentGarbageCollection>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Runtime data is created at startup and never deployed (docs/08 section 4). -->
+    <Content Remove="App_Data\**" />
+    <None Remove="App_Data\**" />
+    <Content Update="appsettings.Production.json" CopyToPublishDirectory="Never" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\ProdTrack.Application\ProdTrack.Application.csproj" />
+    <ProjectReference Include="..\ProdTrack.Infrastructure\ProdTrack.Infrastructure.csproj" />
+    <ProjectReference Include="..\ProdTrack.Contracts\ProdTrack.Contracts.csproj" />
+    <ProjectReference Include="..\ProdTrack.UI.Shared\ProdTrack.UI.Shared.csproj" />
+    <ProjectReference Include="..\ProdTrack.ShopFloor\ProdTrack.ShopFloor.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" />
+    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" PrivateAssets="all" />
+    <PackageReference Include="Serilog.AspNetCore" />
+    <PackageReference Include="Serilog.Sinks.File" />
+    <PackageReference Include="Serilog.Formatting.Compact" />
+    <PackageReference Include="Swashbuckle.AspNetCore.SwaggerUI" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="ProdTrack.Server.IntegrationTests" />
+  </ItemGroup>
+</Project>

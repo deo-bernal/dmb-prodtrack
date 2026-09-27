@@ -1,0 +1,255 @@
+# deploy.yml - deploy a successful ci build of main to the free MonsterASP site.
+#
+# Default gate (private repo on GitHub Free): deployments start ONLY when Deo runs this workflow
+# manually (Actions > deploy > Run workflow, branch main). Required reviewers, environment secrets
+# and branch protection are not available for private repos on GitHub Free (GitHub Docs, 2026-09-26).
+# If the repo is public or on GitHub Pro: add a required reviewer to the "production" environment
+# and set repository variable AUTO_DEPLOY=true so every successful ci run on main deploys after approval.
+#
+# Default method: Web Deploy (msdeploy) from windows-latest - the approach MonsterASP documents for
+# GitHub Actions. Alternative: repository variable DEPLOY_METHOD=ftp -> ubuntu-latest + lftp + app_offline.htm.
+#
+# Repository variables: APP_URL, MONSTERASP_SITE, MONSTERASP_FTP_ROOT, DEPLOY_METHOD (webdeploy|ftp), AUTO_DEPLOY
+# Repository secrets:   MONSTERASP_WEBDEPLOY_PASSWORD, MONSTERASP_FTP_HOST, MONSTERASP_FTP_USER,
+#                       MONSTERASP_FTP_PASSWORD, PROD_DB_CONNECTION
+name: deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      ci_run_id:
+        description: 'ci run ID to deploy (empty = latest successful ci push run on main). Use an older ID to roll back.'
+        required: false
+        default: ''
+      deployTarget:
+        description: 'Hosting target (azure/gcp are optional alternatives, docs/03 Appendix A)'
+        type: choice
+        options: [monsterasp, azure, gcp]
+        default: monsterasp
+  workflow_run:
+    workflows: [ci]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: read
+  actions: read            # download the artifact of another workflow run
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  resolve:
+    name: resolve-build
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    if: >-
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_run' && vars.AUTO_DEPLOY == 'true' &&
+       github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
+    outputs:
+      run_id: ${{ steps.pick.outputs.run_id }}
+      sha: ${{ steps.pick.outputs.sha }}
+    steps:
+      - name: Pick and verify the ci run
+        id: pick
+        env:
+          GH_TOKEN: ${{ github.token }}
+          INPUT_RUN: ${{ inputs.ci_run_id }}
+          WR_ID: ${{ github.event.workflow_run.id }}
+        run: |
+          set -euo pipefail
+          if [ -n "${WR_ID:-}" ]; then id="$WR_ID"
+          elif [ -n "${INPUT_RUN:-}" ]; then id="$INPUT_RUN"
+          else
+            id="$(gh run list -R "$GITHUB_REPOSITORY" --workflow ci.yml --branch main --status success \
+                  --limit 20 --json databaseId,event --jq '[.[] | select(.event=="push" or .event=="workflow_dispatch")][0].databaseId')"
+          fi
+          [ -n "$id" ] && [ "$id" != "null" ] || { echo "::error::No successful ci run on main found"; exit 1; }
+          info="$(gh run view "$id" -R "$GITHUB_REPOSITORY" --json workflowName,headBranch,conclusion,headSha \
+                 --jq '[.workflowName,.headBranch,.conclusion,.headSha] | @tsv')"
+          IFS=$'\t' read -r name branch concl sha <<< "$info"
+          if [ "$name" != "ci" ] || [ "$concl" != "success" ]; then
+            echo "::error::Run $id is not a successful ci run ($name, $concl)"; exit 1
+          fi
+          if [ "$branch" != "main" ]; then
+            echo "::warning::Run $id was built from '$branch' (allowed only for rollback from a tag)"
+          fi
+          echo "Deploying ci run $id, commit $sha"
+          echo "run_id=$id" >> "$GITHUB_OUTPUT"
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+
+  deploy-webdeploy:
+    name: deploy-webdeploy
+    needs: resolve
+    if: (inputs.deployTarget || 'monsterasp') == 'monsterasp' && vars.DEPLOY_METHOD != 'ftp'
+    runs-on: windows-latest       # msdeploy is Windows-only; Windows minutes may count double - keep this job short
+    timeout-minutes: 20
+    environment:
+      name: production
+      url: ${{ vars.APP_URL }}
+    steps:
+      - name: Download build
+        uses: actions/download-artifact@v4
+        with:
+          name: prodtrack-drop
+          path: drop
+          run-id: ${{ needs.resolve.outputs.run_id }}
+          github-token: ${{ github.token }}
+
+      - name: Apply idempotent EF Core migrations
+        shell: pwsh
+        env:
+          PROD_DB_CONNECTION: ${{ secrets.PROD_DB_CONNECTION }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if (-not (Get-Module -ListAvailable -Name SqlServer)) {
+            Install-Module SqlServer -Scope CurrentUser -Force -AllowClobber
+          }
+          Import-Module SqlServer
+          Invoke-Sqlcmd -ConnectionString $env:PROD_DB_CONNECTION -InputFile 'drop/db/migrations.sql' -QueryTimeout 600
+          Write-Host "Migrations applied"
+
+      - name: Web Deploy to MonsterASP (msdeploy)
+        shell: pwsh
+        env:
+          SITE: ${{ vars.MONSTERASP_SITE }}
+          WD_PASSWORD: ${{ secrets.MONSTERASP_WEBDEPLOY_PASSWORD }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $candidates = @("C:\Program Files\IIS\Microsoft Web Deploy V3\msdeploy.exe",
+                          "C:\Program Files (x86)\IIS\Microsoft Web Deploy V3\msdeploy.exe")
+          $md = $candidates | Where-Object { Test-Path $_ } | Select-Object -First 1
+          if (-not $md) {
+            Write-Host "msdeploy.exe not found on the image - installing Web Deploy with Chocolatey"
+            choco install webdeploy -y --no-progress | Out-Null
+            $md = $candidates | Where-Object { Test-Path $_ } | Select-Object -First 1
+            if (-not $md) { throw "msdeploy.exe not found after install" }
+          }
+          $src = (Resolve-Path 'drop/app').Path
+          # Command line from MonsterASP help "How to deploy website content from command line",
+          # plus standard Web Deploy rules (AppOffline, skip server-owned paths) - verify on first run.
+          & $md -verb:sync `
+            "-source:contentPath=$src" `
+            "-dest:contentPath=$env:SITE,computerName=https://$env:SITE.siteasp.net:8172/msdeploy.axd?site=$env:SITE,userName=$env:SITE,password=$env:WD_PASSWORD,authtype=Basic,includeAcls=False" `
+            -allowUntrusted -enableRule:AppOffline `
+            "-skip:objectName=dirPath,absolutePath=\\App_Data$" `
+            "-skip:objectName=dirPath,absolutePath=\\logs$" `
+            "-skip:objectName=filePath,absolutePath=\\appsettings\.Production\.json$" `
+            -disableLink:AppPoolExtension -disableLink:ContentExtension -disableLink:CertificateExtension
+          if ($LASTEXITCODE -ne 0) { throw "msdeploy failed with exit code $LASTEXITCODE" }
+
+      - name: Smoke test with retries (cold start is normal)
+        shell: pwsh
+        env:
+          APP_URL: ${{ vars.APP_URL }}
+        run: |
+          for ($i = 1; $i -le 18; $i++) {
+            try {
+              $r = Invoke-WebRequest "$env:APP_URL/health/ready" -UseBasicParsing -TimeoutSec 30
+              if ($r.StatusCode -eq 200) { Write-Host "Healthy after attempt $i"; exit 0 }
+            } catch { }
+            Write-Host "Attempt ${i}: not healthy yet"; Start-Sleep -Seconds 10
+          }
+          Write-Host "::error::Smoke test failed: $env:APP_URL/health/ready"; exit 1
+
+  deploy-ftp:
+    name: deploy-ftp
+    needs: resolve
+    if: (inputs.deployTarget || 'monsterasp') == 'monsterasp' && vars.DEPLOY_METHOD == 'ftp'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment:
+      name: production
+      url: ${{ vars.APP_URL }}
+    env:
+      FTP_HOST: ${{ secrets.MONSTERASP_FTP_HOST }}
+      FTP_USER: ${{ secrets.MONSTERASP_FTP_USER }}
+      FTP_PASSWORD: ${{ secrets.MONSTERASP_FTP_PASSWORD }}
+      FTP_ROOT: ${{ vars.MONSTERASP_FTP_ROOT }}
+    steps:
+      - name: Download build
+        uses: actions/download-artifact@v4
+        with:
+          name: prodtrack-drop
+          path: drop
+          run-id: ${{ needs.resolve.outputs.run_id }}
+          github-token: ${{ github.token }}
+
+      - name: Install lftp
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq lftp
+
+      - name: Take site offline (app_offline.htm)
+        run: |
+          set -euo pipefail
+          lftp <<EOF_LFTP
+          set cmd:fail-exit yes
+          set net:max-retries 3
+          set net:timeout 30
+          set ftp:ssl-allow yes
+          open -u "$FTP_USER","$FTP_PASSWORD" "$FTP_HOST"
+          cd "${FTP_ROOT:-/}"
+          put drop/deploy/app_offline.htm -o app_offline.htm
+          EOF_LFTP
+          sleep 10   # let IIS unload the app and release file locks (avoids FTP 550)
+
+      - name: Apply idempotent EF Core migrations
+        shell: pwsh
+        env:
+          PROD_DB_CONNECTION: ${{ secrets.PROD_DB_CONNECTION }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Install-Module SqlServer -Scope CurrentUser -Force -AllowClobber
+          Import-Module SqlServer
+          Invoke-Sqlcmd -ConnectionString $env:PROD_DB_CONNECTION -InputFile 'drop/db/migrations.sql' -QueryTimeout 600
+
+      - name: Upload app (lftp mirror; keeps App_Data, logs and server config)
+        run: |
+          set -euo pipefail
+          lftp <<EOF_LFTP
+          set cmd:fail-exit yes
+          set net:max-retries 3
+          set net:timeout 30
+          set ftp:ssl-allow yes
+          open -u "$FTP_USER","$FTP_PASSWORD" "$FTP_HOST"
+          cd "${FTP_ROOT:-/}"
+          mirror --reverse --delete --parallel=4 \
+            --exclude-glob App_Data/ --exclude-glob logs/ \
+            --exclude-glob app_offline.htm --exclude-glob appsettings.Production.json \
+            drop/app .
+          EOF_LFTP
+
+      - name: Bring site online (remove app_offline.htm)
+        if: always()
+        run: |
+          lftp <<EOF_LFTP
+          set net:max-retries 3
+          set ftp:ssl-allow yes
+          open -u "$FTP_USER","$FTP_PASSWORD" "$FTP_HOST"
+          cd "${FTP_ROOT:-/}"
+          rm -f app_offline.htm
+          EOF_LFTP
+
+      - name: Smoke test with retries (cold start is normal)
+        env:
+          APP_URL: ${{ vars.APP_URL }}
+        run: |
+          for i in $(seq 1 18); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 "$APP_URL/health/ready" || true)
+            if [ "$code" = "200" ]; then echo "Healthy after attempt $i"; exit 0; fi
+            echo "Attempt $i: HTTP $code"; sleep 10
+          done
+          echo "::error::Smoke test failed: $APP_URL/health/ready"; exit 1
+
+  deploy-alternative:
+    name: deploy-alternative
+    needs: resolve
+    if: inputs.deployTarget == 'azure' || inputs.deployTarget == 'gcp'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Not activated
+        run: |
+          echo "::error::deployTarget=${{ inputs.deployTarget }} is an optional alternative (PT-057/PT-058, docs/03 Appendix A)."
+          echo "Add azure/login (OIDC) or google-github-actions/auth steps here when a subscription exists."
+          exit 1

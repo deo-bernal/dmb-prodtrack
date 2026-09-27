@@ -1,0 +1,3 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Domain: entities, value objects, domain events and errors. No project or package references (docs/02 section 4.1). -->
+</Project>

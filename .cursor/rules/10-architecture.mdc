@@ -1,0 +1,27 @@
+---
+description: Clean architecture and portability rules - apply when adding or moving code, projects or references
+globs: src/**/*.cs, src/**/*.csproj, tests/ProdTrack.ArchitectureTests/**
+alwaysApply: false
+---
+
+# Architecture rules
+
+Layers (dependencies point inward):
+
+```
+Domain  <-  Application  <-  Infrastructure (+ optional Infrastructure.Azure / Infrastructure.Gcp)  <-  Server (composition root)
+Contracts <- ApiClient <- ShopFloor ; UI.Shared <- Server, ShopFloor
+```
+
+- `ProdTrack.Domain`: entities, value objects, domain events, errors. BCL only.
+- `ProdTrack.Application`: use cases as `ICommandHandler<TCommand,TResult>` / `IQueryHandler<TQuery,TResult>` in `Feature/UseCase/` folders, FluentValidation validators, `[RequiresPolicy]` attributes, ports in `Abstractions/` (`IAppDbContext`, `IFileStorage`, `ISecretProvider`, `INotifier`, `ICurrentUser`, `IPdfRenderer`, `IQrCodeGenerator`). No EF provider, ASP.NET Core or cloud SDK references. No MediatR.
+- `ProdTrack.Infrastructure`: EF Core (SQL Server), configurations, migrations, audit `SaveChangesInterceptor`, QuestPDF, QRCoder, Local adapters.
+- `ProdTrack.Infrastructure.Azure` / `.Gcp`: **optional** adapter projects (Sprint 8, PT-057/058), the only places allowed to reference `Azure.*` / `Google.Cloud.*`. No cloud SDKs by default - the MonsterASP host uses the Local adapters.
+- `ProdTrack.Server`: Program.cs, auth, endpoints (`/api/v1`), `ProductionHub` (`/hubs/production`), Blazor components, health checks, hosts ShopFloor. Endpoints are thin: bind -> command -> handler -> `Result` -> TypedResults/ProblemDetails.
+- Blazor Server components call Application handlers in-process via `IUseCaseDispatcher`; the ShopFloor PWA calls only the REST API via `ProdTrack.ApiClient`.
+- Business rules belong in domain methods (`workOrder.Release(...)`, `operation.Start(...)`), never in endpoints/components.
+- Real-time: domain events dispatched after commit -> `INotifier` -> SignalR groups (`dashboard`, `station:{code}`, `workorder:{id}`). Hub methods are subscription-only; writes go through REST/use cases.
+- Provider selection only in the composition root via `Cloud:Provider` (`Local|Azure|Gcp`, default `Local`).
+- Free-host constraints (256 MB RAM, 30-min sleep, no email): stream large files, keep caches small, make `BackgroundService`s idempotent and restart-safe, no email-dependent features.
+- When you add a project or reference, make sure `ProdTrack.ArchitectureTests` still enforces these rules; add a rule if a new boundary appears.
+- Significant design changes require an ADR in `docs/adr/` and an update to `docs/02-technical-design.md`.
