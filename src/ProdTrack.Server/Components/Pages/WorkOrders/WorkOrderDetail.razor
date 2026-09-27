@@ -1,18 +1,31 @@
 @page "/work-orders/{Id:int}"
 @attribute [Authorize(Policy = Policies.ReadAll)]
 @rendermode InteractiveServer
+@implements IDisposable
 @using ProdTrack.Application.WorkOrders
 @using ProdTrack.Application.WorkOrders.Artwork
 @using ProdTrack.Application.WorkOrders.DeleteWorkOrder
 @using ProdTrack.Application.WorkOrders.GetWorkOrder
+@using ProdTrack.Application.WorkOrders.HoldResumeCancel
+@using ProdTrack.Application.ReasonCodes
+@using ProdTrack.Application.ReasonCodes.GetReasonCodes
+@using ProdTrack.Domain.ReasonCodes
+@using ProdTrack.Server.Realtime
 @using ProdTrack.Application.WorkOrders.ReleaseWorkOrder
 @using ProdTrack.Domain.WorkOrders
 @inject UseCaseDispatcher Dispatcher
 @inject NavigationManager Navigation
+@inject IRealtimeFeed Feed
 
 <PageTitle>@(wo?.Number ?? "Work order") · ProdTrack</PageTitle>
 
 <ErrorAlert Error="error" />
+@if (stale)
+{
+    <div class="alert alert-warning" role="alert" data-testid="stale-warning">
+        This work order was changed by someone else since you opened it; nothing was saved. The page now shows the latest version, so review it and try again.
+    </div>
+}
 @if (notice is not null)
 {
     <div class="alert alert-success" role="status">@notice</div>
@@ -29,11 +42,36 @@
                 <button class="btn btn-outline-danger" @onclick="DeleteAsync">Delete draft</button>
             </AuthorizeView>
         }
+        @if (wo.Status is WorkOrderStatus.Released or WorkOrderStatus.InProgress or WorkOrderStatus.OnHold or WorkOrderStatus.Completed)
+        {
+            <AuthorizeView Policy="@Policies.ControlWorkOrders">
+                <a class="btn btn-outline-secondary" href="work-orders/@wo.Id/traveler" target="_blank" data-testid="print-traveler">Print traveler</a>
+            </AuthorizeView>
+        }
+        @if (wo.Status == WorkOrderStatus.OnHold)
+        {
+            <AuthorizeView Policy="@Policies.ControlWorkOrders">
+                <button class="btn btn-warning" @onclick="ResumeAsync" data-testid="resume">Resume</button>
+            </AuthorizeView>
+        }
     </div>
+
+    @if (wo.Status == WorkOrderStatus.OnHold && wo.HoldReason is not null)
+    {
+        <div class="alert alert-warning" role="status" data-testid="hold-reason"><strong>On hold:</strong> @wo.HoldReason</div>
+    }
+    @if (wo.Status == WorkOrderStatus.Cancelled && wo.CancelReason is not null)
+    {
+        <div class="alert alert-dark" role="status"><strong>Cancelled:</strong> @wo.CancelReason</div>
+    }
 
     <dl class="row">
         <dt class="col-sm-2">Product</dt><dd class="col-sm-10">@wo.ProductSku · @wo.ProductName (@wo.ProductType)</dd>
         <dt class="col-sm-2">Customer</dt><dd class="col-sm-10">@wo.CustomerName</dd>
+        @if (wo.SalesOrderId is not null)
+        {
+            <dt class="col-sm-2">Sales order</dt><dd class="col-sm-10"><a href="sales-orders/@wo.SalesOrderId">@wo.SalesOrderNumber</a></dd>
+        }
         @if (!string.IsNullOrEmpty(wo.Legend))
         {
             <dt class="col-sm-2">Legend</dt><dd class="col-sm-10">@wo.Legend</dd>
@@ -52,14 +90,63 @@
     else
     {
         <table class="table table-sm" data-testid="operations-table">
-            <thead><tr><th>#</th><th>Station</th><th>Status</th><th class="text-end">Input</th><th class="text-end">Good</th><th class="text-end">Scrap</th></tr></thead>
+            <thead><tr><th>#</th><th>Station</th><th>Status</th><th class="text-end">Input</th><th class="text-end">Good</th><th class="text-end">Scrap</th><th>Started</th><th>Completed</th><th></th></tr></thead>
             <tbody>
                 @foreach (var op in wo.Operations)
                 {
-                    <tr><td>@op.Sequence</td><td>@op.StationCode</td><td><StatusBadge Status="@op.Status.ToString()" /></td><td class="text-end">@op.InputQuantity</td><td class="text-end">@op.GoodQuantity</td><td class="text-end">@op.ScrapQuantity</td></tr>
+                    <tr>
+                        <td>@op.Sequence</td>
+                        <td>@op.StationCode <span class="text-muted small">@op.StationName</span></td>
+                        <td><StatusBadge Status="@op.Status.ToString()" /></td>
+                        <td class="text-end">@op.InputQuantity</td>
+                        <td class="text-end">@op.GoodQuantity</td>
+                        <td class="text-end">@op.ScrapQuantity</td>
+                        <td class="small">@Time(op.StartedAtUtc) @op.StartedBy</td>
+                        <td class="small">@Time(op.CompletedAtUtc)</td>
+                        <td class="text-end"><a class="btn btn-sm btn-outline-primary" href="floor/operations/@op.Id">Open on floor</a></td>
+                    </tr>
                 }
             </tbody>
         </table>
+    }
+
+    @if (wo.Status is WorkOrderStatus.Released or WorkOrderStatus.InProgress or WorkOrderStatus.Draft)
+    {
+        <AuthorizeView Policy="@Policies.ControlWorkOrders">
+            <div class="card mt-4" data-testid="control-panel">
+                <div class="card-header">Hold / cancel</div>
+                <div class="card-body row g-2 align-items-end">
+                    @if (wo.Status is WorkOrderStatus.Released or WorkOrderStatus.InProgress)
+                    {
+                        <div class="col-md-3">
+                            <label class="form-label" for="hold-reason">Hold reason</label>
+                            <select id="hold-reason" class="form-select" @bind="holdReasonId" data-testid="hold-reason-select">
+                                <option value="0">(select)</option>
+                                @foreach (var rc in holdReasons)
+                                {
+                                    <option value="@rc.Id">@rc.Code · @rc.Description</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label" for="hold-note">Note (optional)</label>
+                            <input id="hold-note" class="form-control" @bind="holdNote" />
+                        </div>
+                        <div class="col-md-2">
+                            <button class="btn btn-warning w-100" @onclick="HoldAsync" data-testid="hold">Put on hold</button>
+                        </div>
+                    }
+                    <div class="w-100"></div>
+                    <div class="col-md-7">
+                        <label class="form-label" for="cancel-reason">Cancel reason</label>
+                        <input id="cancel-reason" class="form-control" @bind="cancelReason" data-testid="cancel-reason" />
+                    </div>
+                    <div class="col-md-2">
+                        <button class="btn btn-outline-danger w-100" @onclick="CancelAsync" data-testid="cancel">Cancel work order</button>
+                    </div>
+                </div>
+            </div>
+        </AuthorizeView>
     }
 
     <h2 class="h4 mt-4">Artwork proofs @(wo.RequiresArtworkApproval ? "(approval required before release)" : string.Empty)</h2>
@@ -109,8 +196,34 @@
     private Error? error;
     private string? notice;
     private string? rejectReason;
+    private IReadOnlyList<ReasonCodeModel> holdReasons = [];
+    private int holdReasonId;
+    private string? holdNote;
+    private string? cancelReason;
+    private bool stale;
+    private LiveRefresh? live;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var reasons = await Dispatcher.QueryAsync(new GetReasonCodesQuery(ReasonCategory.Hold));
+        if (reasons.IsSuccess)
+        {
+            holdReasons = reasons.Value;
+        }
+
+        live = new LiveRefresh(Feed, c => c.WorkOrderId == Id, () => InvokeAsync(async () =>
+        {
+            await LoadAsync();
+            StateHasChanged();
+        }), TimeSpan.FromMilliseconds(500));
+    }
 
     protected override Task OnParametersSetAsync() => LoadAsync();
+
+    private static string Time(DateTimeOffset? value) =>
+        value?.ToLocalTime().ToString("MM-dd HH:mm", System.Globalization.CultureInfo.InvariantCulture) ?? string.Empty;
+
+    public void Dispose() => live?.Dispose();
 
     private async Task LoadAsync()
     {
@@ -130,15 +243,29 @@
         notice = null;
         var result = await action();
         error = result.Error;
+        stale = result.Error?.Type is ErrorType.PreconditionFailed or ErrorType.Conflict;
         if (result.IsSuccess)
         {
             notice = success;
+        }
+
+        if (result.IsSuccess || stale)
+        {
             await LoadAsync();
         }
     }
 
+    private Task HoldAsync() =>
+        RunAsync(() => Dispatcher.SendAsync(new HoldWorkOrderCommand(Id, holdReasonId, holdNote, wo?.Version)), "Work order put on hold.");
+
+    private Task ResumeAsync() =>
+        RunAsync(() => Dispatcher.SendAsync(new ResumeWorkOrderCommand(Id, wo?.Version)), "Work order resumed.");
+
+    private Task CancelAsync() =>
+        RunAsync(() => Dispatcher.SendAsync(new CancelWorkOrderCommand(Id, cancelReason ?? string.Empty, wo?.Version)), "Work order cancelled.");
+
     private Task ReleaseAsync() =>
-        RunAsync(() => Dispatcher.SendAsync(new ReleaseWorkOrderCommand(Id)), "Released. Operations were created from the current routing.");
+        RunAsync(() => Dispatcher.SendAsync(new ReleaseWorkOrderCommand(Id, wo?.Version)), "Released. Operations were created from the current routing.");
 
     private Task ApproveAsync(int version) =>
         RunAsync(() => Dispatcher.SendAsync(new ApproveArtworkProofCommand(Id, version, null)), $"Artwork v{version} approved.");

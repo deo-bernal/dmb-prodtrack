@@ -58,3 +58,17 @@ h1:focus {
 .form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
     text-align: start;
 }
+/* Printable traveler (PT-027) */
+.print-page { padding: 1rem; }
+.traveler { max-width: 190mm; margin: 0 auto; font-size: 0.95rem; }
+.traveler-header { display: flex; gap: 1rem; align-items: flex-start; border-bottom: 2px solid #000; padding-bottom: 0.75rem; }
+.traveler-qr { width: 42mm; flex: none; }
+.traveler-qr svg, .traveler-op-qr svg { width: 100%; height: auto; display: block; }
+.traveler-number { font-size: 2rem; font-weight: 700; letter-spacing: 0.05em; }
+.traveler-op-qr { width: 24mm; }
+.traveler-ops td { vertical-align: middle; height: 26mm; }
+@media print {
+    .no-print, #blazor-error-ui, #components-reconnect-modal { display: none !important; }
+    .print-page { padding: 0; }
+    @page { size: A4; margin: 10mm; }
+}

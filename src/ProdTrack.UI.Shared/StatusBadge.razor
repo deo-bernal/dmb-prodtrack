@@ -15,10 +15,11 @@
     private string CssClass => Status switch
     {
         "Draft" or "Pending" => "text-bg-secondary",
-        "Released" or "Ready" => "text-bg-primary",
+        "Released" or "Ready" or "Open" => "text-bg-primary",
         "InProgress" => "text-bg-info",
         "OnHold" or "Paused" => "text-bg-warning",
-        "Completed" or "Approved" => "text-bg-success",
+        "Completed" or "Approved" or "Closed" or "Passed" or "Active" => "text-bg-success",
+        "Failed" or "Disabled" => "text-bg-danger",
         "Cancelled" or "Rejected" or "Skipped" or "Superseded" => "text-bg-dark",
         _ => "text-bg-light",
     };

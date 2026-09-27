@@ -1,0 +1,183 @@
+@page "/sales-orders/new"
+@page "/sales-orders/{Id:int}/edit"
+@attribute [Authorize(Policy = Policies.PlanWorkOrders)]
+@rendermode InteractiveServer
+@using ProdTrack.Application.Products
+@using ProdTrack.Application.Products.GetProducts
+@using ProdTrack.Application.SalesOrders
+@using ProdTrack.Domain.Products
+@inject UseCaseDispatcher Dispatcher
+@inject NavigationManager Navigation
+@inject ProdTrack.Application.Abstractions.IPlantClock Clock
+
+<PageTitle>@(Id is null ? "New sales order" : "Edit sales order") · ProdTrack</PageTitle>
+<h1>@(Id is null ? "New sales order" : $"Edit {number}")</h1>
+
+<ErrorAlert Error="error" />
+@if (stale)
+{
+    <div class="alert alert-warning" role="alert">
+        Someone else changed this sales order after you opened it. <button class="btn btn-sm btn-outline-dark ms-2" @onclick="LoadAsync">Reload latest</button>
+    </div>
+}
+
+<div class="row g-3 mb-3">
+    <div class="col-md-5">
+        <label class="form-label" for="so-customer">Customer</label>
+        <input id="so-customer" class="form-control" @bind="customer" data-testid="so-customer" />
+    </div>
+    <div class="col-md-3">
+        <label class="form-label" for="so-po">Customer PO</label>
+        <input id="so-po" class="form-control" @bind="po" />
+    </div>
+    <div class="col-md-2">
+        <label class="form-label" for="so-due">Due date</label>
+        <input id="so-due" type="date" class="form-control" @bind="due" />
+    </div>
+</div>
+
+<h2 class="h5">Lines</h2>
+<table class="table table-sm align-middle" data-testid="so-lines">
+    <thead><tr><th style="width:40%">Product</th><th style="width:10%">Qty</th><th>Legend (pipe markers)</th><th></th></tr></thead>
+    <tbody>
+        @foreach (var line in lines)
+        {
+            <tr>
+                <td>
+                    <select class="form-select form-select-sm" @bind="line.ProductId" disabled="@line.Locked" aria-label="Product">
+                        <option value="0">(select a product)</option>
+                        @foreach (var p in products)
+                        {
+                            <option value="@p.Id">@p.Sku · @p.Name</option>
+                        }
+                    </select>
+                </td>
+                <td><input type="number" min="1" class="form-control form-control-sm" @bind="line.Quantity" disabled="@line.Locked" aria-label="Quantity" /></td>
+                <td>
+                    @if (TypeOf(line.ProductId) is ProductType.PipeMarker)
+                    {
+                        <input class="form-control form-control-sm" @bind="line.Legend" disabled="@line.Locked" aria-label="Legend" />
+                    }
+                </td>
+                <td class="text-end">
+                    @if (line.Locked)
+                    {
+                        <span class="text-muted small">Locked (@line.WorkOrderNumber)</span>
+                    }
+                    else
+                    {
+                        <button class="btn btn-sm btn-outline-danger" @onclick="() => lines.Remove(line)">Remove</button>
+                    }
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+<button class="btn btn-outline-secondary btn-sm" @onclick="AddLine" data-testid="so-add-line">Add line</button>
+
+<div class="mt-4">
+    <button class="btn btn-primary" @onclick="SaveAsync" data-testid="so-save">@(Id is null ? "Create sales order" : "Save changes")</button>
+    <a class="btn btn-link" href="@(Id is null ? "sales-orders" : $"sales-orders/{Id}")">Cancel</a>
+</div>
+
+@code {
+    [Parameter]
+    public int? Id { get; set; }
+
+    private IReadOnlyList<ProductModel> products = [];
+    private readonly List<LineForm> lines = [];
+    private string? customer;
+    private string? po;
+    private DateOnly due;
+    private string? number;
+    private byte[]? version;
+    private Error? error;
+    private bool stale;
+
+    protected override async Task OnInitializedAsync()
+    {
+        due = Clock.Today.AddDays(14);
+        var result = await Dispatcher.QueryAsync(new GetProductsQuery());
+        if (result.IsSuccess)
+        {
+            products = result.Value;
+        }
+
+        if (Id is null)
+        {
+            AddLine();
+        }
+        else
+        {
+            await LoadAsync();
+        }
+    }
+
+    private ProductType? TypeOf(int productId) => products.FirstOrDefault(p => p.Id == productId)?.ProductType;
+
+    private void AddLine() => lines.Add(new LineForm());
+
+    private async Task LoadAsync()
+    {
+        stale = false;
+        var result = await Dispatcher.QueryAsync(new GetSalesOrderQuery(Id!.Value));
+        error = result.Error;
+        if (result.IsFailure)
+        {
+            return;
+        }
+
+        var so = result.Value;
+        (number, customer, po, due, version) = (so.Number, so.CustomerName, so.PoNumber, so.DueDate, so.Version);
+        lines.Clear();
+        lines.AddRange(so.Lines.Select(l => new LineForm
+        {
+            LineId = l.Id,
+            ProductId = l.ProductId,
+            Quantity = l.Quantity,
+            Legend = l.Legend,
+            Locked = l.WorkOrderId is not null,
+            WorkOrderNumber = l.WorkOrderNumber,
+        }));
+    }
+
+    private async Task SaveAsync()
+    {
+        stale = false;
+        var inputs = lines.Select(l => new SalesOrderLineInput(l.LineId, l.ProductId, l.Quantity, TypeOf(l.ProductId) is ProductType.PipeMarker ? l.Legend : null)).ToList();
+        if (Id is null)
+        {
+            var created = await Dispatcher.SendAsync(new CreateSalesOrderCommand(customer ?? string.Empty, po, due, inputs));
+            error = created.Error;
+            if (created.IsSuccess)
+            {
+                Navigation.NavigateTo($"sales-orders/{created.Value.Id}");
+            }
+
+            return;
+        }
+
+        var updated = await Dispatcher.SendAsync(new UpdateSalesOrderCommand(Id.Value, customer ?? string.Empty, po, due, inputs, version));
+        error = updated.Error;
+        stale = updated.Error?.Type is ErrorType.PreconditionFailed or ErrorType.Conflict;
+        if (updated.IsSuccess)
+        {
+            Navigation.NavigateTo($"sales-orders/{Id}");
+        }
+    }
+
+    private sealed class LineForm
+    {
+        public int? LineId { get; set; }
+
+        public int ProductId { get; set; }
+
+        public int Quantity { get; set; } = 1;
+
+        public string? Legend { get; set; }
+
+        public bool Locked { get; set; }
+
+        public string? WorkOrderNumber { get; set; }
+    }
+}

@@ -1,0 +1,52 @@
+@page "/admin/users"
+@attribute [Authorize(Policy = Policies.ManageUsers)]
+@rendermode InteractiveServer
+@using ProdTrack.Application.Users
+@inject UseCaseDispatcher Dispatcher
+
+<PageTitle>Users · ProdTrack</PageTitle>
+
+<div class="d-flex align-items-center mb-3">
+    <h1 class="me-auto">Users</h1>
+    <a class="btn btn-primary" href="admin/users/new" data-testid="new-user">New user</a>
+</div>
+
+<ErrorAlert Error="error" />
+
+<table class="table table-sm table-hover" data-testid="users-table">
+    <thead><tr><th>Name</th><th>Email</th><th>Roles</th><th>Badge</th><th>Home station</th><th>Status</th></tr></thead>
+    <tbody>
+        @foreach (var u in users)
+        {
+            <tr class="@(u.IsActive ? string.Empty : "text-muted")">
+                <td><a href="admin/users/@u.Id">@u.DisplayName</a></td>
+                <td>@u.Email</td>
+                <td>@string.Join(", ", u.Roles)</td>
+                <td>@u.BadgeNumber</td>
+                <td>@u.HomeStationCode</td>
+                <td>
+                    <StatusBadge Status="@(u.IsActive ? "Active" : "Disabled")" />
+                    @if (u.IsLockedOut)
+                    {
+                        <span class="badge text-bg-warning ms-1">Locked out</span>
+                    }
+                    @if (u.MustChangePassword)
+                    {
+                        <span class="badge text-bg-light ms-1">Must change password</span>
+                    }
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@code {
+    private IReadOnlyList<UserSummaryModel> users = [];
+    private Error? error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var result = await Dispatcher.QueryAsync(new GetUsersQuery());
+        (users, error) = result.IsSuccess ? (result.Value, null) : (users, result.Error);
+    }
+}
