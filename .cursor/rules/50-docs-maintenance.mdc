@@ -1,0 +1,28 @@
+---
+description: Always keep documentation in sync with code changes
+alwaysApply: true
+---
+
+# Keep the docs updated (same change as the code)
+
+Whenever you change behaviour, structure, configuration, infrastructure or the CI/CD workflows, update the matching document in the same change:
+
+| Change | Update |
+|---|---|
+| New/changed endpoint | `docs/02-technical-design.md` section 6 (API table: method, route, roles, story) |
+| Entity/schema change | `docs/02` section 5 (ERD/conventions) + EF migration |
+| Business rule or KPI change | `docs/01-business-requirements.md` sections 7/9 |
+| User-visible behaviour | `docs/07-user-guide.md` (role section; keep screenshot placeholders until real screenshots exist) |
+| New technology/package/hosting or service tier | `docs/03-tech-stack-and-cloud.md` (+ cost caveat, source link) |
+| GitHub workflows, secrets/variables, environments, repo settings | `docs/11-github-setup.md` (and the `docs/10` lab mapping if concepts change) |
+| Azure DevOps (Phase 2) pipelines, service connections | `docs/04-azure-devops-setup.md` |
+| Deployment, config keys, monitoring, runbook | `docs/08-deployment-and-operations.md` and `docs/02` section 15 |
+| Coding convention | `docs/09-coding-standards.md` and the relevant `.cursor/rules/*.mdc` |
+| Story finished / scope change | `docs/05-backlog.md` status table (section 6); if stories are added/changed, update `docs/05-backlog.md` and keep `docs/backlog-github-issues.csv`, `scripts/create-github-issues.sh`, `docs/backlog.csv` and `docs/backlog-agile-process.csv` consistent with it (never renumber PT keys) |
+| Significant decision | New ADR in `docs/adr/NNNN-title.md` |
+
+Rules:
+- Add a line to the document's change log (date in Asia/Manila, short description).
+- Keep docs consistent with each other (names, routes, roles, sprint numbers). If you find an inconsistency, fix it or report it.
+- Mark hosting/GitHub/cloud prices and free tiers as "verify" with a link to the official pricing page; never invent prices.
+- Never add claims about Marking Services Inc.'s real systems.

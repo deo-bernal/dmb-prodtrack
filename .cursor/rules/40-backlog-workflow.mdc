@@ -1,0 +1,17 @@
+---
+description: How to work story by story from the backlog - apply when asked to implement a feature, story or PT key
+alwaysApply: false
+---
+
+# Story-by-story workflow
+
+1. **Pick the story.** Use the `PT-nnn` key (or GitHub issue `#n`, whose title starts with `PT-nnn:`) given by the user. Otherwise take the first not-done story of the lowest sprint milestone in `docs/05-backlog.md` (status table in section 6) and state which one.
+2. **Understand it.** Read the story, acceptance criteria and notes; the referenced sections of `docs/02` (API table, ERD, auth), `docs/01` (business rules BR-xx, KPIs) and `docs/09`. Check dependencies on earlier stories.
+3. **Plan.** Reply with a short plan: domain changes, use cases, endpoints/UI, migrations, tests (one per scenario), docs to update. Ask only if something blocks you; otherwise follow documented defaults.
+4. **Branch.** `feature/PT-nnn-short-name` (the user runs git commands unless they ask you to).
+5. **Test first.** Translate each Given/When/Then into tests. Then implement the minimum to pass, then refactor.
+6. **Verify.** `dotnet build -warnaserror`, `dotnet test --filter "Category!=E2E"`, `dotnet format --verify-no-changes`.
+7. **Docs.** Apply `.cursor/rules/50-docs-maintenance.mdc`.
+8. **Report.** Summarise changes, list tests per scenario, manual test steps (URLs, roles), migrations, follow-ups. Suggest the commit message `PT-nnn: <summary>` and a PR (title `PT-nnn: <summary>`, body following `.github/pull_request_template.md`, `Closes #<issue>`). Do not create issues, PRs or labels with `gh` unless asked.
+
+Do not implement multiple stories in one change unless asked. Do not start Phase 2 items (`phase-2` label / milestone "Phase 2") or optional Sprint 8 items unless explicitly requested.

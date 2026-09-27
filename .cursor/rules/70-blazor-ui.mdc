@@ -1,0 +1,16 @@
+---
+description: Blazor UI rules for the back office and the shop-floor PWA
+globs: **/*.razor, **/*.razor.cs, **/*.razor.css, src/ProdTrack.ShopFloor/**, src/ProdTrack.UI.Shared/**
+alwaysApply: false
+---
+
+# Blazor UI rules
+
+- Back office (`ProdTrack.Server/Components`): Interactive Server render mode; call Application handlers via `IUseCaseDispatcher`; subscribe to `IRealtimeFeed` for live updates (don't open extra SignalR connections).
+- Shop floor (`ProdTrack.ShopFloor`): Blazor WebAssembly PWA under base path `/floor`; uses `ProdTrack.ApiClient` only; SignalR client for `/hubs/production` with automatic reconnect and state re-fetch.
+- Shop-floor UX: touch targets >= 48 px, base font >= 18 px, one primary action per screen, high contrast, status = colour + icon + text, audible and `aria-live` feedback for scans, clear offline banner.
+- Scan input: a focused hidden input captures keyboard-wedge scans ending with Enter; camera scan via JS interop (BarcodeDetector with fallback). Parse with the Application `ScanCodeParser` rules (payloads `WO:`, `OP:`, `ST:`, `MAT:`).
+- Every interactive element has `data-testid`. Components stay small; no business logic in components.
+- Show ProblemDetails errors as plain-language messages with the correlation/reference ID.
+- Display times in plant time zone (`Plant:TimeZone`, Asia/Manila) with explicit formatting.
+- Role-based visibility via `AuthorizeView` with policy names from `Policies`; the server still enforces authorization.
