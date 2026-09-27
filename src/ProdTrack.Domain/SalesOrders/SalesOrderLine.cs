@@ -58,7 +58,7 @@ public sealed class SalesOrderLine : Entity
         }
 
         var spec = definition.SpecOverride ?? product.DefaultSpec;
-        errors.AddRange(spec.Validate(product.ProductType).Select(e => new KeyValuePair<string, string>($"{field}.spec.{e.Key}", e.Value)));
+        errors.AddRange(spec.Validate(product.ProductType).Select(e => new KeyValuePair<string, string>($"{field}.{e.Key}", e.Value)));
         if (errors.Count > before)
         {
             return;
