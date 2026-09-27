@@ -1,3 +1,8 @@
+@* Marker for UI automation: present only once the page runs interactively (circuit connected). *@
+@if (RendererInfo.IsInteractive)
+{
+    <span data-interactive hidden></span>
+}
 @if (Error is not null)
 {
     <div class="alert alert-danger" role="alert" data-testid="error-alert">
