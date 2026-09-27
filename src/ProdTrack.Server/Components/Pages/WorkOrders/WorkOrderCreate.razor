@@ -1,0 +1,100 @@
+@page "/work-orders/new"
+@attribute [Authorize(Policy = Policies.PlanWorkOrders)]
+@rendermode InteractiveServer
+@using ProdTrack.Application.Products
+@using ProdTrack.Application.Products.GetProducts
+@using ProdTrack.Application.WorkOrders.CreateWorkOrder
+@using ProdTrack.Domain.Products
+@inject UseCaseDispatcher Dispatcher
+@inject NavigationManager Navigation
+@inject ProdTrack.Application.Abstractions.IPlantClock Clock
+
+<PageTitle>New work order · ProdTrack</PageTitle>
+<h1>New work order</h1>
+
+<ErrorAlert Error="error" />
+
+<EditForm Model="form" OnValidSubmit="CreateAsync" FormName="new-work-order">
+    <div class="row g-3">
+        <div class="col-md-6">
+            <label class="form-label" for="product">Product</label>
+            <InputSelect id="product" class="form-select" @bind-Value="form.ProductId">
+                <option value="0">(select a product)</option>
+                @foreach (var p in products)
+                {
+                    <option value="@p.Id">@p.Sku · @p.Name (@p.ProductType)</option>
+                }
+            </InputSelect>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label" for="qty">Quantity</label>
+            <InputNumber id="qty" class="form-control" @bind-Value="form.Quantity" />
+        </div>
+        <div class="col-md-2">
+            <label class="form-label" for="due">Due date</label>
+            <InputDate id="due" class="form-control" @bind-Value="form.DueDate" />
+        </div>
+        <div class="col-md-2">
+            <label class="form-label" for="prio">Priority (1 = highest)</label>
+            <InputNumber id="prio" class="form-control" @bind-Value="form.Priority" />
+        </div>
+        <div class="col-md-6">
+            <label class="form-label" for="cust">Customer</label>
+            <InputText id="cust" class="form-control" @bind-Value="form.CustomerName" />
+        </div>
+        @if (SelectedType is ProductType.PipeMarker)
+        {
+            <div class="col-md-6">
+                <label class="form-label" for="legend">Legend (required for pipe markers)</label>
+                <InputText id="legend" class="form-control" @bind-Value="form.Legend" />
+            </div>
+        }
+    </div>
+    <button type="submit" class="btn btn-primary mt-4" data-testid="create-work-order">Create draft</button>
+</EditForm>
+
+@code {
+    private IReadOnlyList<ProductModel> products = [];
+    private CreateForm form = new();
+    private Error? error;
+
+    private ProductType? SelectedType => products.FirstOrDefault(p => p.Id == form.ProductId)?.ProductType;
+
+    protected override async Task OnInitializedAsync()
+    {
+        form.DueDate = Clock.Today.AddDays(7);
+        var result = await Dispatcher.QueryAsync(new GetProductsQuery());
+        if (result.IsSuccess)
+        {
+            products = result.Value;
+        }
+
+        error = result.Error;
+    }
+
+    private async Task CreateAsync()
+    {
+        var legend = SelectedType is ProductType.PipeMarker ? form.Legend : null;
+        var result = await Dispatcher.SendAsync(new CreateWorkOrderCommand(form.ProductId, form.Quantity, form.DueDate, form.Priority, form.CustomerName, legend));
+        error = result.Error;
+        if (result.IsSuccess)
+        {
+            Navigation.NavigateTo($"work-orders/{result.Value.Id}");
+        }
+    }
+
+    private sealed class CreateForm
+    {
+        public int ProductId { get; set; }
+
+        public int Quantity { get; set; } = 100;
+
+        public DateOnly DueDate { get; set; }
+
+        public int Priority { get; set; } = 3;
+
+        public string? CustomerName { get; set; }
+
+        public string? Legend { get; set; }
+    }
+}

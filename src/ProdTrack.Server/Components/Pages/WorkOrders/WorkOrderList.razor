@@ -1,0 +1,104 @@
+@page "/work-orders"
+@attribute [Authorize(Policy = Policies.ReadAll)]
+@rendermode InteractiveServer
+@using ProdTrack.Application.Common
+@using ProdTrack.Application.WorkOrders
+@using ProdTrack.Application.WorkOrders.SearchWorkOrders
+@using ProdTrack.Domain.WorkOrders
+@inject UseCaseDispatcher Dispatcher
+
+<PageTitle>Work orders · ProdTrack</PageTitle>
+<div class="d-flex align-items-center mb-3">
+    <h1 class="me-auto">Work orders</h1>
+    <AuthorizeView Policy="@Policies.PlanWorkOrders">
+        <a class="btn btn-primary" href="work-orders/new" data-testid="new-work-order">New work order</a>
+    </AuthorizeView>
+</div>
+
+<div class="row g-2 mb-3">
+    <div class="col-md-4">
+        <input class="form-control" placeholder="Search number, SKU or customer" @bind="search" @bind:after="SearchAsync" data-testid="wo-search" />
+    </div>
+    <div class="col-md-2">
+        <select class="form-select" @bind="statusFilter" @bind:after="SearchAsync" aria-label="Status">
+            <option value="">All statuses</option>
+            @foreach (var s in Enum.GetValues<WorkOrderStatus>())
+            {
+                <option value="@s">@s</option>
+            }
+        </select>
+    </div>
+    <div class="col-md-2">
+        <input type="date" class="form-control" @bind="dueBefore" @bind:after="SearchAsync" aria-label="Due before" />
+    </div>
+    <div class="col-md-2 form-check pt-2 ms-2">
+        <input type="checkbox" class="form-check-input" id="late" @bind="lateOnly" @bind:after="SearchAsync" />
+        <label class="form-check-label" for="late">Late only</label>
+    </div>
+</div>
+
+<ErrorAlert Error="error" />
+@if (results is not null)
+{
+    <table class="table table-striped table-hover" data-testid="wo-table">
+        <thead><tr><th>Number</th><th>Product</th><th>Customer</th><th>Status</th><th class="text-end">Qty</th><th class="text-end">Done</th><th>Due</th><th>Priority</th></tr></thead>
+        <tbody>
+            @foreach (var w in results.Items)
+            {
+                <tr>
+                    <td><a href="work-orders/@w.Id">@w.Number</a></td>
+                    <td>@w.ProductSku · @w.ProductName</td>
+                    <td>@w.CustomerName</td>
+                    <td><StatusBadge Status="@w.Status.ToString()" /></td>
+                    <td class="text-end">@w.Quantity</td>
+                    <td class="text-end">@w.CompletedQuantity</td>
+                    <td class="@(w.IsLate ? "text-danger fw-bold" : string.Empty)">@w.DueDate.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture) @(w.IsLate ? "(late)" : string.Empty)</td>
+                    <td>@w.Priority</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    <div class="d-flex align-items-center gap-2">
+        <button class="btn btn-sm btn-outline-secondary" disabled="@(pageNumber <= 1)" @onclick="() => GoToAsync(pageNumber - 1)">Previous</button>
+        <span>Page @results.Page of @TotalPages (@results.TotalCount work orders)</span>
+        <button class="btn btn-sm btn-outline-secondary" disabled="@(pageNumber >= TotalPages)" @onclick="() => GoToAsync(pageNumber + 1)">Next</button>
+    </div>
+}
+
+@code {
+    private PagedResult<WorkOrderSummaryModel>? results;
+    private string? search;
+    private string statusFilter = string.Empty;
+    private DateOnly? dueBefore;
+    private bool lateOnly;
+    private int pageNumber = 1;
+    private Error? error;
+
+    private int TotalPages => results is null ? 1 : Math.Max(1, (int)Math.Ceiling(results.TotalCount / (double)results.PageSize));
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private Task SearchAsync()
+    {
+        pageNumber = 1;
+        return LoadAsync();
+    }
+
+    private Task GoToAsync(int number)
+    {
+        pageNumber = number;
+        return LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        WorkOrderStatus? status = Enum.TryParse<WorkOrderStatus>(statusFilter, out var parsed) ? parsed : null;
+        var result = await Dispatcher.QueryAsync(new SearchWorkOrdersQuery(status, search, dueBefore, lateOnly, pageNumber));
+        if (result.IsSuccess)
+        {
+            results = result.Value;
+        }
+
+        error = result.Error;
+    }
+}

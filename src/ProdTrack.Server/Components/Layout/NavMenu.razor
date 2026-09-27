@@ -1,0 +1,67 @@
+<div class="top-row ps-3 navbar navbar-dark">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="">DMB ProdTrack</a>
+    </div>
+</div>
+
+<input type="checkbox" title="Navigation menu" class="navbar-toggler" />
+
+<div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
+    <nav class="nav flex-column">
+        <AuthorizeView Policy="@Policies.ReadAll">
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+                    <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Dashboard
+                </NavLink>
+            </div>
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="work-orders">
+                    <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Work orders
+                </NavLink>
+            </div>
+        </AuthorizeView>
+        <AuthorizeView Policy="@Policies.PlanWorkOrders">
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="work-orders/new" data-testid="nav-new-work-order">
+                    <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> New work order
+                </NavLink>
+            </div>
+        </AuthorizeView>
+        <AuthorizeView Policy="@Policies.ReadAll">
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="products">
+                    <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Products
+                </NavLink>
+            </div>
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="routings">
+                    <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Routings
+                </NavLink>
+            </div>
+        </AuthorizeView>
+        <AuthorizeView Policy="@Policies.ManageMasterData">
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="admin/stations" data-testid="nav-admin-stations">
+                    <span class="bi bi-lock-nav-menu" aria-hidden="true"></span> Stations
+                </NavLink>
+            </div>
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="admin/reason-codes">
+                    <span class="bi bi-lock-nav-menu" aria-hidden="true"></span> Reason codes
+                </NavLink>
+            </div>
+        </AuthorizeView>
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="floor/">
+                <span class="bi bi-person-badge-nav-menu" aria-hidden="true"></span> Shop floor
+            </NavLink>
+        </div>
+        <AuthorizeView>
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="account/change-password">
+                    <span class="bi bi-person-fill-nav-menu" aria-hidden="true"></span> Change password
+                </NavLink>
+            </div>
+        </AuthorizeView>
+    </nav>
+</div>

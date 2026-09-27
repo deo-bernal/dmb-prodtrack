@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Typed HttpClient wrapper for the REST API (ShopFloor PWA, later MAUI). -->
+  <ItemGroup>
+    <ProjectReference Include="..\ProdTrack.Contracts\ProdTrack.Contracts.csproj" />
+  </ItemGroup>
+</Project>
