@@ -69,4 +69,12 @@ public sealed class RecordingNotifier : INotifier
         Notifications.Enqueue(notification);
         return Task.CompletedTask;
     }
+
+    public ConcurrentQueue<OperationChangedNotification> OperationNotifications { get; } = new();
+
+    public Task OperationChangedAsync(OperationChangedNotification notification, CancellationToken cancellationToken)
+    {
+        OperationNotifications.Enqueue(notification);
+        return Task.CompletedTask;
+    }
 }

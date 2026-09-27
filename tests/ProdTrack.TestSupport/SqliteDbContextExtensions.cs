@@ -20,6 +20,7 @@ public static class SqliteDbContextExtensions
         services.AddDbContext<AppDbContext>(options => options
             .UseSqlite(connection)
             .ReplaceService<IModelCustomizer, SqliteModelCustomizer>()
+            .AddInterceptors(new SqliteRowVersionInterceptor())
             .ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning)));
         return services;
     }

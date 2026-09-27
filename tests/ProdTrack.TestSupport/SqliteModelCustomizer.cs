@@ -6,8 +6,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace ProdTrack.TestSupport;
 
 /// <summary>
-/// Adapts the SQL Server model to SQLite for fast tests: drops T-SQL check constraints, turns rowversion into a plain
-/// nullable column, and stores DateTimeOffset/decimal in sortable/aggregatable forms. Production always uses SQL Server.
+/// Adapts the SQL Server model to SQLite for fast tests: drops T-SQL check constraints, turns rowversion into a client-stamped
+/// nullable concurrency token, and stores DateTimeOffset/decimal in sortable/aggregatable forms. Production always uses SQL Server.
 /// </summary>
 public sealed class SqliteModelCustomizer(ModelCustomizerDependencies dependencies) : RelationalModelCustomizer(dependencies)
 {
@@ -27,7 +27,8 @@ public sealed class SqliteModelCustomizer(ModelCustomizerDependencies dependenci
             {
                 if (property.Name == "RowVersion" && property.ClrType == typeof(byte[]))
                 {
-                    property.IsConcurrencyToken = false;
+                    // Stays a concurrency token; SqliteRowVersionInterceptor assigns new values on save.
+                    property.IsConcurrencyToken = true;
                     property.ValueGenerated = ValueGenerated.Never;
                     property.IsNullable = true;
                 }
