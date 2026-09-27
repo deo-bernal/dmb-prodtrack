@@ -26,8 +26,8 @@ public sealed class DocsScreenshotTests(E2EServer server)
         await Ui.WithFailureScreenshotAsync(server, nameof(Capture_user_guide_screenshots), CaptureAsync);
     }
 
-    private static Task ShotAsync(IPage page, string name, bool fullPage = false) =>
-        page.ScreenshotAsync(new() { Path = Path.Combine(OutputFolder!, name + ".png"), FullPage = fullPage });
+    private static async Task ShotAsync(IPage page, string name, bool fullPage = false) =>
+        await page.ScreenshotAsync(new() { Path = Path.Combine(OutputFolder!, name + ".png"), FullPage = fullPage });
 
     private async Task CaptureAsync(IPage page)
     {
