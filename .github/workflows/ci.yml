@@ -1,0 +1,121 @@
+# ci.yml - MSI ProdTrack continuous integration (GitHub-hosted ubuntu-latest).
+# Runs on every PR to main and on pushes to main. On main it also publishes the deployable
+# artifact "prodtrack-drop" (win-x86 framework-dependent publish + idempotent migrations.sql)
+# that deploy.yml picks up. Needs no repository secrets. The Playwright E2E job (PT-029) is added
+# together with tests/ProdTrack.E2E.Tests in Sprint 3.
+name: ci
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+    paths-ignore: ['docs/**', '**/*.md']
+  workflow_dispatch:        # e.g. rebuild an older commit/tag for a rollback
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true  # saves Actions minutes on superseded PR pushes
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+  BUILD_CONFIGURATION: Release
+  DOTNET_RID: win-x86       # MonsterASP: 32-bit, framework-dependent (documented route)
+  SOLUTION: ProdTrack.slnx
+
+jobs:
+  build:
+    name: build-test        # use this job name as the required status check
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+          cache: true
+          cache-dependency-path: '**/Directory.Packages.props'
+
+      - name: Restore tools and packages
+        run: |
+          dotnet tool restore
+          dotnet restore "$SOLUTION"
+
+      - name: Format check
+        run: dotnet format "$SOLUTION" --verify-no-changes --no-restore
+
+      - name: Build
+        run: dotnet build "$SOLUTION" -c "$BUILD_CONFIGURATION" --no-restore -warnaserror
+
+      - name: Unit tests
+        run: >
+          dotnet test "$SOLUTION" -c "$BUILD_CONFIGURATION" --no-build
+          --filter "Category!=Integration&Category!=E2E"
+          --logger trx --collect:"XPlat Code Coverage"
+          --results-directory "${{ runner.temp }}/tests"
+
+      - name: Integration tests (in-process host, SQLite in-memory; no secrets or Docker needed)
+        run: >
+          dotnet test "$SOLUTION" -c "$BUILD_CONFIGURATION" --no-build
+          --filter "Category=Integration"
+          --logger trx --collect:"XPlat Code Coverage"
+          --results-directory "${{ runner.temp }}/tests"
+
+      - name: Coverage summary
+        if: always()
+        run: |
+          dotnet reportgenerator "-reports:${{ runner.temp }}/tests/**/coverage.cobertura.xml" \
+            "-targetdir:${{ runner.temp }}/coverage" "-reporttypes:MarkdownSummaryGithub" || true
+          if [ -f "${{ runner.temp }}/coverage/SummaryGithub.md" ]; then
+            cat "${{ runner.temp }}/coverage/SummaryGithub.md" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: ${{ runner.temp }}/tests/**/*.trx
+          retention-days: 5
+
+      - name: Vulnerable package check
+        run: |
+          dotnet list "$SOLUTION" package --vulnerable --include-transitive | tee vuln.txt
+          if grep -qiE '\b(High|Critical)\b' vuln.txt; then echo "::error::High/Critical vulnerable packages found"; exit 1; fi
+
+      - name: Publish app (win-x86, framework-dependent)
+        if: github.event_name != 'pull_request'
+        run: >
+          dotnet publish src/ProdTrack.Server/ProdTrack.Server.csproj -c "$BUILD_CONFIGURATION"
+          -r "$DOTNET_RID" --self-contained false
+          -o "${{ runner.temp }}/drop/app"
+
+      - name: Generate idempotent migration script
+        if: github.event_name != 'pull_request'
+        run: >
+          dotnet ef migrations script --idempotent
+          --project src/ProdTrack.Infrastructure --startup-project src/ProdTrack.Server
+          --configuration "$BUILD_CONFIGURATION"
+          --output "${{ runner.temp }}/drop/db/migrations.sql"
+
+      - name: Add deploy helpers
+        if: github.event_name != 'pull_request'
+        run: |
+          mkdir -p "${{ runner.temp }}/drop/deploy"
+          cp deploy/app_offline.htm "${{ runner.temp }}/drop/deploy/"
+          echo "${GITHUB_SHA}" > "${{ runner.temp }}/drop/deploy/commit.txt"
+
+      - name: Upload deployable artifact
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: prodtrack-drop
+          path: ${{ runner.temp }}/drop
+          retention-days: 5     # keep artifact storage under the 500 MB free quota; rebuild old commits for rollback
