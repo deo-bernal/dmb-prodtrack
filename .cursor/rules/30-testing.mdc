@@ -1,0 +1,18 @@
+---
+description: Testing rules - apply when writing or changing tests or production code that needs tests
+globs: tests/**/*.cs, src/**/*.cs
+alwaysApply: false
+---
+
+# Testing rules (see docs/06-testing-strategy.md)
+
+- Frameworks: xUnit v3, AwesomeAssertions, NSubstitute, Testcontainers.MsSql + Respawn, bUnit, Playwright for .NET. `FakeTimeProvider` for time.
+- Every Given/When/Then scenario of the story gets at least one test named after it, tagged `[Trait("Story","PT-xxx")]` and a category trait (`Unit`, `Integration`, `Contract`, `E2E`).
+- Naming: `Scenario_Condition_ExpectedResult`; Arrange/Act/Assert separated by blank lines.
+- Unit tests: domain rules and handlers with substituted ports; no database, no network, no sleeps.
+- Integration tests: `ProdTrackApiFactory` (WebApplicationFactory + SQL Server container), test auth via `client.AsRole(Roles.X)`; cover happy path, main failure (ProblemDetails with correct status and `code`) and authorization (forbidden roles -> 403). Keep the endpoint x role matrix test updated when adding endpoints.
+- New `IFileStorage`/`ISecretProvider` implementations must pass the shared contract test suite.
+- UI: bUnit for component logic; Playwright E2E only for main flows; use `data-testid` selectors and page objects.
+- Use builders from `tests/ProdTrack.TestUtilities`; no shared mutable static state; deterministic data (seeded Bogus if needed).
+- Write the failing test first when practical, then implement. Run `dotnet test --filter "Category!=E2E"` before finishing.
+- A bug fix includes a regression test that fails without the fix.

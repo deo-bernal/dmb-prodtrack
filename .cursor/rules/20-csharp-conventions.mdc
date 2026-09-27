@@ -1,0 +1,22 @@
+---
+description: C# and .NET coding conventions for ProdTrack
+globs: **/*.cs
+alwaysApply: false
+---
+
+# C# conventions (summary of docs/09-coding-standards.md)
+
+- File-scoped namespaces matching folders (`ProdTrack.Application.WorkOrders.Release`); one public type per file.
+- Nullable enabled; no `!` suppression without a comment explaining why.
+- `sealed` by default; `record` for DTOs/commands/value objects; primary constructors for DI in services/handlers.
+- Async all the way with `CancellationToken ct` as last parameter; no `.Result`, `.Wait()`, `async void`.
+- Inject `TimeProvider`; never `DateTime.Now/UtcNow`. Timestamps are `DateTimeOffset` UTC named `...AtUtc`.
+- Structured logging templates (`"Operation {OperationId} started"`), never string interpolation in log calls; never log secrets or tokens.
+- Guard clauses with `ArgumentNullException.ThrowIfNull` etc. Exhaustive `switch` expressions over enums with `UnreachableException` default.
+- Expose `IReadOnlyList<T>`/`IReadOnlyCollection<T>` from entities; keep setters private.
+- Handlers return `Result`/`Result<T>` with typed errors (`WorkOrderErrors.ArtworkNotApproved`, code `WorkOrder.ArtworkNotApproved`). Throw only for truly exceptional situations.
+- EF Core: `IEntityTypeConfiguration<T>` per entity; `AsNoTracking()` + projections for queries; no lazy loading; no concatenated SQL.
+- Endpoints: `MapGroup("/api/v1/...")`, `TypedResults`, `.RequireAuthorization(Policies.X)`, `.WithName()/.WithSummary()`, declare `Produces`/`ProducesProblem`.
+- Mapping: Mapperly or explicit mapping methods; no AutoMapper.
+- Packages only via `Directory.Packages.props`; avoid commercially licensed packages (FluentAssertions v8+, MediatR v13+, AutoMapper).
+- `TODO` comments must include a story key: `// TODO PT-061: ...`.
