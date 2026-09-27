@@ -1,0 +1,233 @@
+@page "/products/new"
+@page "/products/{Id:int}"
+@attribute [Authorize(Policy = Policies.ReadAll)]
+@rendermode InteractiveServer
+@using ProdTrack.Application.Products
+@using ProdTrack.Application.Products.CreateProduct
+@using ProdTrack.Application.Products.GetProduct
+@using ProdTrack.Application.Products.UpdateProduct
+@using ProdTrack.Application.Reference
+@using ProdTrack.Application.Reference.GetReferenceList
+@using ProdTrack.Domain.Products
+@inject UseCaseDispatcher Dispatcher
+@inject NavigationManager Navigation
+@inject IAuthorizationService AuthorizationService
+
+<PageTitle>@(Id is null ? "New product" : form.Sku) · ProdTrack</PageTitle>
+<h1>@(Id is null ? "New product" : $"Product {form.Sku}")</h1>
+
+<ErrorAlert Error="error" />
+@if (saved)
+{
+    <div class="alert alert-success" role="status">Saved.</div>
+}
+
+<EditForm Model="form" OnValidSubmit="SaveAsync" FormName="product">
+    <fieldset disabled="@(!canEdit)">
+        <div class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label" for="sku">SKU</label>
+                <InputText id="sku" class="form-control" @bind-Value="form.Sku" disabled="@(Id is not null)" />
+            </div>
+            <div class="col-md-5">
+                <label class="form-label" for="name">Name</label>
+                <InputText id="name" class="form-control" @bind-Value="form.Name" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label" for="type">Product type</label>
+                <InputSelect id="type" class="form-select" @bind-Value="form.ProductType" disabled="@(Id is not null)">
+                    @foreach (var t in Enum.GetValues<ProductType>())
+                    {
+                        <option value="@t">@t</option>
+                    }
+                </InputSelect>
+            </div>
+            <div class="col-md-4 form-check ms-2">
+                <InputCheckbox id="art" class="form-check-input" @bind-Value="form.RequiresArtworkApproval" />
+                <label class="form-check-label" for="art">Requires artwork approval before release</label>
+            </div>
+            @if (Id is not null)
+            {
+                <div class="col-md-3 form-check ms-2">
+                    <InputCheckbox id="active" class="form-check-input" @bind-Value="form.IsActive" />
+                    <label class="form-check-label" for="active">Active</label>
+                </div>
+            }
+        </div>
+
+        <h2 class="h5 mt-4">Specification</h2>
+        <div class="row g-3">
+            <div class="col-md-3"><label class="form-label" for="mat">Material</label><InputText id="mat" class="form-control" @bind-Value="spec.Material" /></div>
+            @if (form.ProductType is ProductType.PipeMarker)
+            {
+                <div class="col-md-3">
+                    <label class="form-label" for="scheme">Color scheme</label>
+                    <InputSelect id="scheme" class="form-select" @bind-Value="spec.ColorSchemeCode">
+                        <option value="">(select)</option>
+                        @foreach (var c in colorSchemes)
+                        {
+                            <option value="@c.Code">@c.Name</option>
+                        }
+                    </InputSelect>
+                </div>
+                <div class="col-md-3"><label class="form-label" for="std">Standard</label><InputText id="std" class="form-control" @bind-Value="spec.Standard" /></div>
+                <div class="col-md-3"><label class="form-label" for="od">Pipe OD range</label><InputText id="od" class="form-control" @bind-Value="spec.PipeOdRange" /></div>
+                <div class="col-md-3"><label class="form-label" for="lh">Letter height (mm)</label><InputNumber id="lh" class="form-control" @bind-Value="spec.LetterHeightMm" /></div>
+            }
+            @if (form.ProductType is ProductType.ValveTag)
+            {
+                <div class="col-md-3"><label class="form-label" for="shape">Tag shape</label><InputText id="shape" class="form-control" @bind-Value="spec.TagShape" /></div>
+                <div class="col-md-3"><label class="form-label" for="dia">Diameter (mm)</label><InputNumber id="dia" class="form-control" @bind-Value="spec.DiameterMm" /></div>
+                <div class="col-md-3"><label class="form-label" for="thk">Thickness (mm)</label><InputNumber id="thk" class="form-control" @bind-Value="spec.ThicknessMm" /></div>
+                <div class="col-md-3"><label class="form-label" for="hole">Hole size (mm)</label><InputNumber id="hole" class="form-control" @bind-Value="spec.HoleSizeMm" /></div>
+            }
+            @if (form.ProductType is ProductType.SafetySign or ProductType.Label)
+            {
+                <div class="col-md-3"><label class="form-label" for="w">Width (mm)</label><InputNumber id="w" class="form-control" @bind-Value="spec.WidthMm" /></div>
+                <div class="col-md-3"><label class="form-label" for="h">Height (mm)</label><InputNumber id="h" class="form-control" @bind-Value="spec.HeightMm" /></div>
+            }
+            @if (form.ProductType is ProductType.SafetySign)
+            {
+                <div class="col-md-3">
+                    <label class="form-label" for="sw">Signal word</label>
+                    <InputSelect id="sw" class="form-select" @bind-Value="spec.SignalWord">
+                        <option value="">(select)</option>
+                        @foreach (var s in signalWords)
+                        {
+                            <option value="@s.Code">@s.Name</option>
+                        }
+                    </InputSelect>
+                </div>
+                <div class="col-md-3"><label class="form-label" for="mount">Mounting</label><InputText id="mount" class="form-control" @bind-Value="spec.Mounting" /></div>
+            }
+            @if (form.ProductType is ProductType.Label)
+            {
+                <div class="col-md-3"><label class="form-label" for="adh">Adhesive</label><InputText id="adh" class="form-control" @bind-Value="spec.Adhesive" /></div>
+                <div class="col-md-3"><label class="form-label" for="fin">Finish</label><InputText id="fin" class="form-control" @bind-Value="spec.Finish" /></div>
+            }
+        </div>
+        @if (canEdit)
+        {
+            <button type="submit" class="btn btn-primary mt-4">Save</button>
+        }
+    </fieldset>
+</EditForm>
+
+@code {
+    [Parameter]
+    public int? Id { get; set; }
+
+    private ProductForm form = new();
+    private SpecForm spec = new();
+    private IReadOnlyList<ReferenceItemModel> colorSchemes = [];
+    private IReadOnlyList<ReferenceItemModel> signalWords = [];
+    private bool canEdit;
+    private bool saved;
+    private Error? error;
+
+    [CascadingParameter]
+    private Task<AuthenticationState> AuthenticationState { get; set; } = default!;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        var user = (await AuthenticationState).User;
+        canEdit = (await AuthorizationService.AuthorizeAsync(user, Policies.ManageProductsAndRoutings)).Succeeded;
+        colorSchemes = (await Dispatcher.QueryAsync(new GetReferenceListQuery("color-schemes"))) is { IsSuccess: true } cs ? cs.Value : [];
+        signalWords = (await Dispatcher.QueryAsync(new GetReferenceListQuery("signal-words"))) is { IsSuccess: true } sw ? sw.Value : [];
+        if (Id is { } id)
+        {
+            var result = await Dispatcher.QueryAsync(new GetProductQuery(id));
+            if (result.IsFailure)
+            {
+                error = result.Error;
+                return;
+            }
+
+            var p = result.Value;
+            form = new ProductForm { Sku = p.Sku, Name = p.Name, ProductType = p.ProductType, RequiresArtworkApproval = p.RequiresArtworkApproval, IsActive = p.IsActive };
+            spec = SpecForm.From(p.Spec);
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        saved = false;
+        Result<ProductModel> result = Id is { } id
+            ? await Dispatcher.SendAsync(new UpdateProductCommand(id, form.Name, form.RequiresArtworkApproval, spec.ToSpec(form.ProductType), form.IsActive))
+            : await Dispatcher.SendAsync(new CreateProductCommand(form.Sku, form.Name, form.ProductType, form.RequiresArtworkApproval, spec.ToSpec(form.ProductType)));
+        error = result.Error;
+        if (result.IsSuccess)
+        {
+            saved = true;
+            if (Id is null)
+            {
+                Navigation.NavigateTo($"products/{result.Value.Id}");
+            }
+        }
+    }
+
+    private sealed class ProductForm
+    {
+        public string Sku { get; set; } = string.Empty;
+
+        public string Name { get; set; } = string.Empty;
+
+        public ProductType ProductType { get; set; } = ProductType.PipeMarker;
+
+        public bool RequiresArtworkApproval { get; set; }
+
+        public bool IsActive { get; set; } = true;
+    }
+
+    private sealed class SpecForm
+    {
+        public string? Material { get; set; }
+
+        public decimal? WidthMm { get; set; }
+
+        public decimal? HeightMm { get; set; }
+
+        public string? Mounting { get; set; }
+
+        public string? Standard { get; set; }
+
+        public string? ColorSchemeCode { get; set; }
+
+        public string? PipeOdRange { get; set; }
+
+        public decimal? LetterHeightMm { get; set; }
+
+        public string? TagShape { get; set; }
+
+        public decimal? DiameterMm { get; set; }
+
+        public decimal? ThicknessMm { get; set; }
+
+        public decimal? HoleSizeMm { get; set; }
+
+        public string? SignalWord { get; set; }
+
+        public string? Adhesive { get; set; }
+
+        public string? Finish { get; set; }
+
+        public static SpecForm From(ProductSpec s) => new()
+        {
+            Material = s.Material, WidthMm = s.WidthMm, HeightMm = s.HeightMm, Mounting = s.Mounting, Standard = s.Standard,
+            ColorSchemeCode = s.ColorSchemeCode, PipeOdRange = s.PipeOdRange, LetterHeightMm = s.LetterHeightMm, TagShape = s.TagShape,
+            DiameterMm = s.DiameterMm, ThicknessMm = s.ThicknessMm, HoleSizeMm = s.HoleSizeMm, SignalWord = s.SignalWord,
+            Adhesive = s.Adhesive, Finish = s.Finish,
+        };
+
+        /// <summary>Only the fields relevant to the product type are sent.</summary>
+        public ProductSpec ToSpec(ProductType type) => type switch
+        {
+            ProductType.PipeMarker => new ProductSpec { Material = N(Material), ColorSchemeCode = N(ColorSchemeCode), Standard = N(Standard), PipeOdRange = N(PipeOdRange), LetterHeightMm = LetterHeightMm },
+            ProductType.ValveTag => new ProductSpec { Material = N(Material), TagShape = N(TagShape), DiameterMm = DiameterMm, ThicknessMm = ThicknessMm, HoleSizeMm = HoleSizeMm },
+            ProductType.SafetySign => new ProductSpec { Material = N(Material), WidthMm = WidthMm, HeightMm = HeightMm, SignalWord = N(SignalWord), Mounting = N(Mounting) },
+            _ => new ProductSpec { Material = N(Material), WidthMm = WidthMm, HeightMm = HeightMm, Adhesive = N(Adhesive), Finish = N(Finish) },
+        };
+
+        private static string? N(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+    }
+}

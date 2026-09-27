@@ -1,0 +1,25 @@
+@page "/Error"
+@attribute [AllowAnonymous]
+@using System.Diagnostics
+
+<PageTitle>Error</PageTitle>
+
+<h1 class="text-danger">Something went wrong.</h1>
+<p>An error occurred while processing your request. Please try again; if it keeps happening, contact your administrator.</p>
+
+@if (!string.IsNullOrEmpty(RequestId))
+{
+    <p><strong>Reference:</strong> <code>@RequestId</code></p>
+}
+
+@code {
+    [CascadingParameter]
+    private HttpContext? HttpContext { get; set; }
+
+    private string? RequestId { get; set; }
+
+    protected override void OnInitialized() =>
+        RequestId = HttpContext?.Response.Headers["X-Correlation-Id"].ToString() is { Length: > 0 } id
+            ? id
+            : Activity.Current?.Id ?? HttpContext?.TraceIdentifier;
+}

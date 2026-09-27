@@ -1,0 +1,99 @@
+@page "/admin/reason-codes"
+@attribute [Authorize(Policy = Policies.ManageMasterData)]
+@rendermode InteractiveServer
+@using ProdTrack.Application.ReasonCodes
+@using ProdTrack.Application.ReasonCodes.CreateReasonCode
+@using ProdTrack.Application.ReasonCodes.GetReasonCodes
+@using ProdTrack.Application.ReasonCodes.UpdateReasonCode
+@using ProdTrack.Domain.ReasonCodes
+@inject UseCaseDispatcher Dispatcher
+
+<PageTitle>Reason codes · ProdTrack</PageTitle>
+<h1>Reason codes</h1>
+
+<ErrorAlert Error="error" />
+
+<EditForm Model="form" OnValidSubmit="CreateAsync" class="row g-2 align-items-end mb-4" FormName="reason-code">
+    <div class="col-md-2">
+        <label class="form-label" for="code">Code</label>
+        <InputText id="code" class="form-control" @bind-Value="form.Code" />
+    </div>
+    <div class="col-md-4">
+        <label class="form-label" for="desc">Description</label>
+        <InputText id="desc" class="form-control" @bind-Value="form.Description" />
+    </div>
+    <div class="col-md-2">
+        <label class="form-label" for="cat">Category</label>
+        <InputSelect id="cat" class="form-select" @bind-Value="form.Category">
+            @foreach (var c in Enum.GetValues<ReasonCategory>())
+            {
+                <option value="@c">@c</option>
+            }
+        </InputSelect>
+    </div>
+    <div class="col-md-2"><button type="submit" class="btn btn-primary">Add</button></div>
+</EditForm>
+
+<table class="table table-striped">
+    <thead><tr><th>Code</th><th>Description</th><th>Category</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+        @foreach (var r in codes)
+        {
+            <tr>
+                <td>@r.Code</td>
+                <td>@r.Description</td>
+                <td>@r.Category</td>
+                <td>@(r.IsActive ? "Active" : "Inactive")</td>
+                <td class="text-end">
+                    <button class="btn btn-sm btn-outline-secondary" @onclick="() => ToggleAsync(r)">@(r.IsActive ? "Deactivate" : "Activate")</button>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@code {
+    private IReadOnlyList<ReasonCodeModel> codes = [];
+    private ReasonForm form = new();
+    private Error? error;
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        var result = await Dispatcher.QueryAsync(new GetReasonCodesQuery(IncludeInactive: true));
+        if (result.IsSuccess)
+        {
+            codes = result.Value;
+        }
+
+        error = result.Error;
+    }
+
+    private async Task CreateAsync()
+    {
+        var result = await Dispatcher.SendAsync(new CreateReasonCodeCommand(form.Code, form.Description, form.Category));
+        error = result.Error;
+        if (result.IsSuccess)
+        {
+            form = new();
+            await LoadAsync();
+        }
+    }
+
+    private async Task ToggleAsync(ReasonCodeModel r)
+    {
+        var result = await Dispatcher.SendAsync(new UpdateReasonCodeCommand(r.Id, r.Description, !r.IsActive));
+        error = result.Error;
+        await LoadAsync();
+    }
+
+    private sealed class ReasonForm
+    {
+        public string Code { get; set; } = string.Empty;
+
+        public string Description { get; set; } = string.Empty;
+
+        public ReasonCategory Category { get; set; } = ReasonCategory.Scrap;
+    }
+}

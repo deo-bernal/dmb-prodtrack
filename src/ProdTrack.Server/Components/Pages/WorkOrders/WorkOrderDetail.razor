@@ -1,0 +1,184 @@
+@page "/work-orders/{Id:int}"
+@attribute [Authorize(Policy = Policies.ReadAll)]
+@rendermode InteractiveServer
+@using ProdTrack.Application.WorkOrders
+@using ProdTrack.Application.WorkOrders.Artwork
+@using ProdTrack.Application.WorkOrders.DeleteWorkOrder
+@using ProdTrack.Application.WorkOrders.GetWorkOrder
+@using ProdTrack.Application.WorkOrders.ReleaseWorkOrder
+@using ProdTrack.Domain.WorkOrders
+@inject UseCaseDispatcher Dispatcher
+@inject NavigationManager Navigation
+
+<PageTitle>@(wo?.Number ?? "Work order") · ProdTrack</PageTitle>
+
+<ErrorAlert Error="error" />
+@if (notice is not null)
+{
+    <div class="alert alert-success" role="status">@notice</div>
+}
+
+@if (wo is not null)
+{
+    <div class="d-flex align-items-center mb-3 gap-2">
+        <h1 class="me-auto">@wo.Number <StatusBadge Status="@wo.Status.ToString()" /></h1>
+        @if (wo.Status == WorkOrderStatus.Draft)
+        {
+            <AuthorizeView Policy="@Policies.PlanWorkOrders">
+                <button class="btn btn-success" @onclick="ReleaseAsync" data-testid="release">Release</button>
+                <button class="btn btn-outline-danger" @onclick="DeleteAsync">Delete draft</button>
+            </AuthorizeView>
+        }
+    </div>
+
+    <dl class="row">
+        <dt class="col-sm-2">Product</dt><dd class="col-sm-10">@wo.ProductSku · @wo.ProductName (@wo.ProductType)</dd>
+        <dt class="col-sm-2">Customer</dt><dd class="col-sm-10">@wo.CustomerName</dd>
+        @if (!string.IsNullOrEmpty(wo.Legend))
+        {
+            <dt class="col-sm-2">Legend</dt><dd class="col-sm-10">@wo.Legend</dd>
+        }
+        <dt class="col-sm-2">Quantity</dt><dd class="col-sm-10">@wo.CompletedQuantity / @wo.Quantity completed</dd>
+        <dt class="col-sm-2">Due</dt><dd class="col-sm-10 @(wo.IsLate ? "text-danger fw-bold" : string.Empty)">@wo.DueDate.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture) @(wo.IsLate ? "(late)" : string.Empty)</dd>
+        <dt class="col-sm-2">Priority</dt><dd class="col-sm-10">@wo.Priority</dd>
+        <dt class="col-sm-2">Routing</dt><dd class="col-sm-10">@(wo.RoutingVersion is null ? "Assigned at release" : $"v{wo.RoutingVersion}")</dd>
+    </dl>
+
+    <h2 class="h4">Operations</h2>
+    @if (wo.Operations.Count == 0)
+    {
+        <p class="text-muted">Operations are created from the current routing when the work order is released.</p>
+    }
+    else
+    {
+        <table class="table table-sm" data-testid="operations-table">
+            <thead><tr><th>#</th><th>Station</th><th>Status</th><th class="text-end">Input</th><th class="text-end">Good</th><th class="text-end">Scrap</th></tr></thead>
+            <tbody>
+                @foreach (var op in wo.Operations)
+                {
+                    <tr><td>@op.Sequence</td><td>@op.StationCode</td><td><StatusBadge Status="@op.Status.ToString()" /></td><td class="text-end">@op.InputQuantity</td><td class="text-end">@op.GoodQuantity</td><td class="text-end">@op.ScrapQuantity</td></tr>
+                }
+            </tbody>
+        </table>
+    }
+
+    <h2 class="h4 mt-4">Artwork proofs @(wo.RequiresArtworkApproval ? "(approval required before release)" : string.Empty)</h2>
+    <table class="table table-sm">
+        <thead><tr><th>Version</th><th>File</th><th>Status</th><th>Uploaded</th><th>Decision</th><th></th></tr></thead>
+        <tbody>
+            @foreach (var p in wo.ArtworkProofs)
+            {
+                <tr>
+                    <td>v@p.Version</td>
+                    <td><a href="api/v1/work-orders/@wo.Id/artwork/@p.Version" target="_blank">@p.OriginalFileName</a></td>
+                    <td><StatusBadge Status="@p.Status.ToString()" /></td>
+                    <td>@p.UploadedBy, @p.UploadedAtUtc.ToLocalTime().ToString("yyyy-MM-dd HH:mm", System.Globalization.CultureInfo.InvariantCulture)</td>
+                    <td>@p.DecidedBy @p.DecisionNote</td>
+                    <td class="text-end">
+                        @if (p.Status == ArtworkProofStatus.Pending)
+                        {
+                            <AuthorizeView Policy="@Policies.ApproveArtwork">
+                                <button class="btn btn-sm btn-success" @onclick="() => ApproveAsync(p.Version)">Approve</button>
+                                <button class="btn btn-sm btn-outline-danger ms-1" @onclick="() => RejectAsync(p.Version)">Reject</button>
+                            </AuthorizeView>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    <AuthorizeView Policy="@Policies.UploadArtwork">
+        <div class="row g-2 align-items-end">
+            <div class="col-md-5">
+                <label class="form-label" for="proof">Upload proof (PDF, PNG, JPG, SVG; max 20 MB)</label>
+                <InputFile id="proof" class="form-control" OnChange="UploadAsync" accept=".pdf,.png,.jpg,.jpeg,.svg" />
+            </div>
+            <div class="col-md-5">
+                <label class="form-label" for="reason">Reject reason</label>
+                <input id="reason" class="form-control" @bind="rejectReason" />
+            </div>
+        </div>
+    </AuthorizeView>
+}
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    private WorkOrderDetailModel? wo;
+    private Error? error;
+    private string? notice;
+    private string? rejectReason;
+
+    protected override Task OnParametersSetAsync() => LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        var result = await Dispatcher.QueryAsync(new GetWorkOrderQuery(Id));
+        if (result.IsSuccess)
+        {
+            wo = result.Value;
+        }
+        else
+        {
+            error = result.Error;
+        }
+    }
+
+    private async Task RunAsync(Func<Task<Result<Unit>>> action, string success)
+    {
+        notice = null;
+        var result = await action();
+        error = result.Error;
+        if (result.IsSuccess)
+        {
+            notice = success;
+            await LoadAsync();
+        }
+    }
+
+    private Task ReleaseAsync() =>
+        RunAsync(() => Dispatcher.SendAsync(new ReleaseWorkOrderCommand(Id)), "Released. Operations were created from the current routing.");
+
+    private Task ApproveAsync(int version) =>
+        RunAsync(() => Dispatcher.SendAsync(new ApproveArtworkProofCommand(Id, version, null)), $"Artwork v{version} approved.");
+
+    private Task RejectAsync(int version) =>
+        RunAsync(() => Dispatcher.SendAsync(new RejectArtworkProofCommand(Id, version, rejectReason ?? string.Empty)), $"Artwork v{version} rejected.");
+
+    private async Task DeleteAsync()
+    {
+        var result = await Dispatcher.SendAsync(new DeleteWorkOrderCommand(Id));
+        error = result.Error;
+        if (result.IsSuccess)
+        {
+            Navigation.NavigateTo("work-orders");
+        }
+    }
+
+    private async Task UploadAsync(InputFileChangeEventArgs e)
+    {
+        notice = null;
+        var file = e.File;
+        if (file.Size > ArtworkFileRules.MaxBytes)
+        {
+            error = Error.Validation("file", "The file is larger than 20 MB.");
+            return;
+        }
+
+        await using var buffer = new MemoryStream();
+        await using (var browserStream = file.OpenReadStream(ArtworkFileRules.MaxBytes))
+        {
+            await browserStream.CopyToAsync(buffer);
+        }
+
+        buffer.Position = 0;
+        var result = await Dispatcher.SendAsync(new UploadArtworkProofCommand(Id, file.Name, file.Size, buffer));
+        error = result.Error;
+        if (result.IsSuccess)
+        {
+            notice = $"Artwork v{result.Value.Version} uploaded.";
+            await LoadAsync();
+        }
+    }
+}

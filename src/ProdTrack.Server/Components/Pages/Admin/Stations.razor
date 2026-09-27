@@ -1,0 +1,155 @@
+@page "/admin/stations"
+@attribute [Authorize(Policy = Policies.ManageMasterData)]
+@rendermode InteractiveServer
+@using ProdTrack.Application.Stations
+@using ProdTrack.Application.Stations.CreateStation
+@using ProdTrack.Application.Stations.DeactivateStation
+@using ProdTrack.Application.Stations.GetStations
+@using ProdTrack.Application.Stations.UpdateStation
+@using ProdTrack.Domain.Stations
+@inject UseCaseDispatcher Dispatcher
+
+<PageTitle>Stations · ProdTrack</PageTitle>
+<h1>Stations</h1>
+
+<ErrorAlert Error="error" />
+@if (notice is not null)
+{
+    <div class="alert alert-info" role="status">@notice</div>
+}
+
+<EditForm Model="form" OnValidSubmit="SaveAsync" class="row g-2 align-items-end mb-4" FormName="station">
+    <div class="col-md-2">
+        <label class="form-label" for="code">Code</label>
+        <InputText id="code" class="form-control" @bind-Value="form.Code" disabled="@(editingId is not null)" />
+    </div>
+    <div class="col-md-3">
+        <label class="form-label" for="name">Name</label>
+        <InputText id="name" class="form-control" @bind-Value="form.Name" />
+    </div>
+    <div class="col-md-2">
+        <label class="form-label" for="type">Type</label>
+        <InputSelect id="type" class="form-select" @bind-Value="form.Type">
+            @foreach (var t in Enum.GetValues<StationType>())
+            {
+                <option value="@t">@t</option>
+            }
+        </InputSelect>
+    </div>
+    <div class="col-md-2">
+        <label class="form-label" for="wc">Work center</label>
+        <InputText id="wc" class="form-control" @bind-Value="form.WorkCenter" />
+    </div>
+    <div class="col-md-3">
+        <button type="submit" class="btn btn-primary">@(editingId is null ? "Add station" : "Save")</button>
+        @if (editingId is not null)
+        {
+            <button type="button" class="btn btn-link" @onclick="Reset">Cancel</button>
+        }
+    </div>
+</EditForm>
+
+<div class="form-check mb-2">
+    <input class="form-check-input" type="checkbox" id="inactive" @bind="includeInactive" @bind:after="LoadAsync" />
+    <label class="form-check-label" for="inactive">Show inactive</label>
+</div>
+
+<table class="table table-striped" data-testid="stations-table">
+    <thead><tr><th>Code</th><th>Name</th><th>Type</th><th>Work center</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+        @foreach (var s in stations)
+        {
+            <tr>
+                <td>@s.Code</td>
+                <td>@s.Name</td>
+                <td>@s.Type</td>
+                <td>@s.WorkCenter</td>
+                <td>@(s.IsActive ? "Active" : "Inactive")</td>
+                <td class="text-end">
+                    <button class="btn btn-sm btn-outline-primary" @onclick="() => Edit(s)">Edit</button>
+                    @if (s.IsActive)
+                    {
+                        <button class="btn btn-sm btn-outline-danger ms-1" @onclick="() => DeactivateAsync(s)">Deactivate</button>
+                    }
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@code {
+    private IReadOnlyList<StationModel> stations = [];
+    private StationForm form = new();
+    private int? editingId;
+    private bool editingActive = true;
+    private bool includeInactive;
+    private Error? error;
+    private string? notice;
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        var result = await Dispatcher.QueryAsync(new GetStationsQuery(includeInactive));
+        if (result.IsSuccess)
+        {
+            stations = result.Value;
+        }
+        else
+        {
+            error = result.Error;
+        }
+    }
+
+    private void Edit(StationModel s)
+    {
+        editingId = s.Id;
+        editingActive = s.IsActive;
+        form = new StationForm { Code = s.Code, Name = s.Name, Type = s.Type, WorkCenter = s.WorkCenter };
+    }
+
+    private void Reset()
+    {
+        editingId = null;
+        form = new();
+    }
+
+    private async Task SaveAsync()
+    {
+        notice = null;
+        Result<StationModel> result = editingId is { } id
+            ? await Dispatcher.SendAsync(new UpdateStationCommand(id, form.Name, form.Type, form.WorkCenter, editingActive))
+            : await Dispatcher.SendAsync(new CreateStationCommand(form.Code, form.Name, form.Type, form.WorkCenter));
+        error = result.Error;
+        if (result.IsSuccess)
+        {
+            notice = $"Station {result.Value.Code} saved.";
+            Reset();
+            await LoadAsync();
+        }
+    }
+
+    private async Task DeactivateAsync(StationModel s)
+    {
+        var result = await Dispatcher.SendAsync(new DeactivateStationCommand(s.Id));
+        error = result.Error;
+        if (result.IsSuccess)
+        {
+            notice = result.Value.OpenOperationCount > 0
+                ? $"{s.Code} deactivated. {result.Value.OpenOperationCount} open operation(s) at this station are unaffected and can still be completed."
+                : $"{s.Code} deactivated.";
+            await LoadAsync();
+        }
+    }
+
+    private sealed class StationForm
+    {
+        public string Code { get; set; } = string.Empty;
+
+        public string Name { get; set; } = string.Empty;
+
+        public StationType Type { get; set; } = StationType.Printing;
+
+        public string? WorkCenter { get; set; }
+    }
+}

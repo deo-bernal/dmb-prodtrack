@@ -1,0 +1,72 @@
+@page "/"
+@inject ProdTrackApiClient Api
+@inject NavigationManager Navigation
+
+<PageTitle>Shop floor</PageTitle>
+
+<h1>Select your station</h1>
+
+@if (_error is not null)
+{
+    <div class="alert alert-warning fs-5" role="alert" aria-live="polite" data-testid="floor-error">
+        @_error.Title
+        @if (_error.StatusCode == 401)
+        {
+            <a class="btn btn-primary ms-3" href="@SignInUrl" data-testid="floor-sign-in">Sign in</a>
+        }
+    </div>
+}
+else if (_stations is null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    @if (_user is not null)
+    {
+        <p class="text-muted" data-testid="floor-user">Signed in as @_user.DisplayName (@string.Join(", ", _user.Roles))</p>
+    }
+
+    <div class="row g-3">
+        @foreach (var station in _stations)
+        {
+            <div class="col-12 col-md-6 col-lg-4">
+                <button class="btn btn-outline-primary w-100 station-button @(station.Code == _selected ? "active" : null)"
+                        data-testid="station-@station.Code" @onclick="() => _selected = station.Code">
+                    <strong>@station.Code</strong><br />@station.Name
+                </button>
+            </div>
+        }
+    </div>
+
+    @if (_selected is not null)
+    {
+        <p class="mt-4 fs-5" aria-live="polite" data-testid="selected-station">
+            Station <strong>@_selected</strong> selected. The station queue and scanning arrive with PT-027 to PT-031.
+        </p>
+    }
+}
+
+@code {
+    private List<StationDto>? _stations;
+    private ProdTrack.Contracts.Users.MeResponse? _user;
+    private ApiError? _error;
+    private string? _selected;
+
+    private string SignInUrl => $"/account/login?returnUrl={Uri.EscapeDataString("/floor/")}";
+
+    protected override async Task OnInitializedAsync()
+    {
+        var me = await Api.GetMeAsync();
+        if (!me.IsSuccess)
+        {
+            _error = me.Error;
+            return;
+        }
+
+        _user = me.Value;
+        var stations = await Api.GetStationsAsync();
+        _stations = stations.Value;
+        _error = stations.Error;
+    }
+}

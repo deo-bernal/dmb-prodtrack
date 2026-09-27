@@ -1,0 +1,20 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/ProdTrack.ApiClient/ProdTrack.ApiClient.csproj" />
+    <Project Path="src/ProdTrack.Application/ProdTrack.Application.csproj" />
+    <Project Path="src/ProdTrack.Contracts/ProdTrack.Contracts.csproj" />
+    <Project Path="src/ProdTrack.Domain/ProdTrack.Domain.csproj" />
+    <Project Path="src/ProdTrack.Infrastructure/ProdTrack.Infrastructure.csproj" />
+    <Project Path="src/ProdTrack.Server/ProdTrack.Server.csproj" />
+    <Project Path="src/ProdTrack.ShopFloor/ProdTrack.ShopFloor.csproj" />
+    <Project Path="src/ProdTrack.UI.Shared/ProdTrack.UI.Shared.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/ProdTrack.Application.Tests/ProdTrack.Application.Tests.csproj" />
+    <Project Path="tests/ProdTrack.ArchitectureTests/ProdTrack.ArchitectureTests.csproj" />
+    <Project Path="tests/ProdTrack.Domain.Tests/ProdTrack.Domain.Tests.csproj" />
+    <Project Path="tests/ProdTrack.Infrastructure.Tests/ProdTrack.Infrastructure.Tests.csproj" />
+    <Project Path="tests/ProdTrack.Server.IntegrationTests/ProdTrack.Server.IntegrationTests.csproj" />
+    <Project Path="tests/ProdTrack.TestSupport/ProdTrack.TestSupport.csproj" />
+  </Folder>
+</Solution>

@@ -1,0 +1,25 @@
+@* Status shown with colour + text (never colour alone, docs/09 section 8). *@
+<span class="badge @CssClass" data-testid="status-badge" title="@Status">@Label</span>
+
+@code {
+    [Parameter, EditorRequired]
+    public string Status { get; set; } = string.Empty;
+
+    private string Label => Status switch
+    {
+        "InProgress" => "In progress",
+        "OnHold" => "On hold",
+        _ => Status,
+    };
+
+    private string CssClass => Status switch
+    {
+        "Draft" or "Pending" => "text-bg-secondary",
+        "Released" or "Ready" => "text-bg-primary",
+        "InProgress" => "text-bg-info",
+        "OnHold" or "Paused" => "text-bg-warning",
+        "Completed" or "Approved" => "text-bg-success",
+        "Cancelled" or "Rejected" or "Skipped" or "Superseded" => "text-bg-dark",
+        _ => "text-bg-light",
+    };
+}
