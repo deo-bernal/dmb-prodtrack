@@ -1,0 +1,98 @@
+# ops.yml - weekly checks for the free MonsterASP site (PT-067, docs/08 sections 6-7):
+# HTTPS certificate expiry (manual 90-day Let's Encrypt renewal), database size (1 GB limit),
+# encrypted .bacpac backup (the free plan has no backups) and optional uploaded-files backup.
+name: ops
+
+on:
+  schedule:
+    - cron: '0 1 * * 1'     # Monday 01:00 UTC = 09:00 PHT
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ops
+  cancel-in-progress: false
+
+jobs:
+  checks:
+    name: ops-checks
+    # Skipped until the site exists (repository variable APP_URL, docs/11); avoids weekly failures before go-live.
+    if: vars.APP_URL != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      APP_URL: ${{ vars.APP_URL }}
+    steps:
+      - name: Check HTTPS certificate expiry
+        run: |
+          set -euo pipefail
+          host=$(echo "$APP_URL" | sed -E 's#https?://([^/]+).*#\1#')
+          end=$(echo | openssl s_client -connect "$host:443" -servername "$host" 2>/dev/null | openssl x509 -noout -enddate | cut -d= -f2)
+          days=$(( ( $(date -d "$end" +%s) - $(date +%s) ) / 86400 ))
+          echo "Certificate for $host expires $end ($days days)" | tee -a "$GITHUB_STEP_SUMMARY"
+          if [ "$days" -lt 21 ]; then
+            echo "::error::HTTPS certificate expires in $days days - renew it in the MonsterASP control panel (docs/08 section 6)"
+            exit 1
+          fi
+
+      - name: Check database size
+        shell: pwsh
+        env:
+          PROD_DB_CONNECTION: ${{ secrets.PROD_DB_CONNECTION }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Install-Module SqlServer -Scope CurrentUser -Force -AllowClobber
+          Import-Module SqlServer
+          $mb = (Invoke-Sqlcmd -ConnectionString $env:PROD_DB_CONNECTION -Query "SELECT CAST(SUM(size) * 8 / 1024.0 AS int) AS mb FROM sys.database_files WHERE type = 0").mb
+          "Database data file size: $mb MB of 1024 MB" | Tee-Object -FilePath $env:GITHUB_STEP_SUMMARY -Append
+          if ($mb -gt 700) { Write-Host "::warning::Database above 700 MB - purge/archive audit rows (docs/08 section 7.4)" }
+
+      - name: Export database (.bacpac) and encrypt
+        env:
+          PROD_DB_CONNECTION: ${{ secrets.PROD_DB_CONNECTION }}
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          set -euo pipefail
+          [ -n "$BACKUP_PASSPHRASE" ] || { echo "::error::Secret BACKUP_PASSPHRASE is not set"; exit 1; }
+          dotnet tool install -g microsoft.sqlpackage
+          export PATH="$PATH:$HOME/.dotnet/tools"
+          f="prodtrack-$(date -u +%Y%m%d).bacpac"
+          sqlpackage /Action:Export /SourceConnectionString:"$PROD_DB_CONNECTION" /TargetFile:"$f"
+          gpg --batch --yes --pinentry-mode loopback --passphrase "$BACKUP_PASSPHRASE" --symmetric --cipher-algo AES256 -o "$f.gpg" "$f"
+          rm -f "$f"
+          mkdir -p backup && mv "$f.gpg" backup/
+
+      - name: Download uploaded files (optional, BACKUP_FILES=true)
+        if: vars.BACKUP_FILES == 'true'
+        env:
+          FTP_HOST: ${{ secrets.MONSTERASP_FTP_HOST }}
+          FTP_USER: ${{ secrets.MONSTERASP_FTP_USER }}
+          FTP_PASSWORD: ${{ secrets.MONSTERASP_FTP_PASSWORD }}
+          FTP_ROOT: ${{ vars.MONSTERASP_FTP_ROOT }}
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq && sudo apt-get install -y -qq lftp
+          lftp <<EOF_LFTP
+          set ftp:ssl-allow yes
+          open -u "$FTP_USER","$FTP_PASSWORD" "$FTP_HOST"
+          cd "${FTP_ROOT:-/}"
+          mirror App_Data/files files
+          EOF_LFTP
+          tar czf files.tgz files
+          gpg --batch --yes --pinentry-mode loopback --passphrase "$BACKUP_PASSPHRASE" --symmetric --cipher-algo AES256 -o "backup/files-$(date -u +%Y%m%d).tgz.gpg" files.tgz
+          rm -rf files files.tgz
+
+      - name: Store encrypted backup as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: prodtrack-backup
+          path: backup/
+          retention-days: 28    # counts against the 500 MB free artifact storage; download monthly to your PC
+
+      - name: Health check (wakes the site once a week - do not schedule more often)
+        run: |
+          code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 60 "$APP_URL/health/live" || true)
+          echo "Health /live: HTTP $code" >> "$GITHUB_STEP_SUMMARY"
