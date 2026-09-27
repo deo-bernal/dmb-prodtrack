@@ -1,6 +1,7 @@
 @page "/"
 @inject ProdTrackApiClient Api
 @inject NavigationManager Navigation
+@inject StationPreference Preference
 
 <PageTitle>Shop floor</PageTitle>
 
@@ -27,24 +28,28 @@ else
         <p class="text-muted" data-testid="floor-user">Signed in as @_user.DisplayName (@string.Join(", ", _user.Roles))</p>
     }
 
+    @if (_selected is not null)
+    {
+        <p class="fs-5" aria-live="polite" data-testid="selected-station">
+            This device is set to <strong>@_selected</strong>.
+            <a class="btn btn-success btn-lg ms-2" href="station/@_selected" data-testid="continue-station">Open @_selected queue</a>
+        </p>
+    }
+
     <div class="row g-3">
         @foreach (var station in _stations)
         {
             <div class="col-12 col-md-6 col-lg-4">
                 <button class="btn btn-outline-primary w-100 station-button @(station.Code == _selected ? "active" : null)"
-                        data-testid="station-@station.Code" @onclick="() => _selected = station.Code">
+                        data-testid="station-@station.Code" @onclick="() => SelectAsync(station.Code)">
                     <strong>@station.Code</strong><br />@station.Name
                 </button>
             </div>
         }
     </div>
 
-    @if (_selected is not null)
-    {
-        <p class="mt-4 fs-5" aria-live="polite" data-testid="selected-station">
-            Station <strong>@_selected</strong> selected. The station queue and scanning arrive with PT-027 to PT-031.
-        </p>
-    }
+    <h2 class="h5 mt-4">Or scan a traveler</h2>
+    <ScanBox StationCode="@_selected" />
 }
 
 @code {
@@ -68,5 +73,17 @@ else
         var stations = await Api.GetStationsAsync();
         _stations = stations.Value;
         _error = stations.Error;
+        _selected = await Preference.GetAsync() ?? _user?.HomeStationCode;
+        if (_selected is not null && _stations?.Exists(s => s.Code == _selected) != true)
+        {
+            _selected = null;
+        }
+    }
+
+    private async Task SelectAsync(string code)
+    {
+        _selected = code;
+        await Preference.SetAsync(code);
+        Navigation.NavigateTo($"station/{code}");
     }
 }
