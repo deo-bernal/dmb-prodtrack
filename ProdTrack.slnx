@@ -13,6 +13,7 @@
     <Project Path="tests/ProdTrack.Application.Tests/ProdTrack.Application.Tests.csproj" />
     <Project Path="tests/ProdTrack.ArchitectureTests/ProdTrack.ArchitectureTests.csproj" />
     <Project Path="tests/ProdTrack.Domain.Tests/ProdTrack.Domain.Tests.csproj" />
+    <Project Path="tests/ProdTrack.E2E.Tests/ProdTrack.E2E.Tests.csproj" />
     <Project Path="tests/ProdTrack.Infrastructure.Tests/ProdTrack.Infrastructure.Tests.csproj" />
     <Project Path="tests/ProdTrack.Server.IntegrationTests/ProdTrack.Server.IntegrationTests.csproj" />
     <Project Path="tests/ProdTrack.TestSupport/ProdTrack.TestSupport.csproj" />
