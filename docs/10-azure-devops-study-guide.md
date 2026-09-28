@@ -1,7 +1,7 @@
-# 10 - Azure DevOps Study Guide (refresher for a Senior Developer interview)
+# 10 - Azure DevOps Study Guide (refresher)
 
 > **Status:** Draft v0.3 (2026-09-26) - practice project. **Phase 2 material:** ProdTrack is delivered on GitHub for now (`11-github-setup.md`); Azure DevOps hands-on work happens in a throwaway `ADO-Lab` project or in Phase 2 (PT-073, setup in `04`). This guide stays the interview refresher; the lab table names the GitHub equivalent you already use so you can compare the two in an interview.
-> **Who this is for:** Deo, who used Azure DevOps for under 2 years until about 2023 and is preparing for a Senior Developer interview at a company that uses Azure DevOps.
+> **Who this is for:** Deo, who used Azure DevOps for under 2 years until about 2023 and wants a structured refresher on current Azure DevOps.
 > **How to use it:** section 1 is a quick "what's new since 2023" briefing, section 2 a self-check, section 3 hands-on labs mapped to this project's backlog, section 4 interview questions with short model answers, and section 5 a 2-3 week schedule. Every item in section 1 was checked against a Microsoft (or cited) source on 2026-09-26. Features change often, so re-check anything you plan to quote as a date.
 
 ---

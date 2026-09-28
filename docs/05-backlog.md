@@ -1468,7 +1468,7 @@ Scenario: Print
 
 - **Story:** As a **planner**, I want to import orders instead of typing them, so that data entry errors drop.
 - **Points:** 8 | **Sprint:** Phase 2+ (unscheduled) | **Tags:** `phase-2;integration`
-- **Notes:** No assumption is made about DMB's real ERP.
+- **Notes:** No assumption is made about any real ERP.
 - **Acceptance criteria:**
 
 ```gherkin
@@ -1605,3 +1605,4 @@ Add rows as work begins. When a story is finished, close the issue (Done on the 
 | 2026-09-26 | v0.3 (GitHub primary): PT-001 (GitHub repo, Projects, issue import script), PT-002 (CI workflow), PT-007 (deploy workflow, Web Deploy from windows-latest), PT-008 (FTP alternative from ubuntu + rollback), PT-029/PT-050/PT-054 (Actions), PT-059 repurposed again (self-hosted agent -> repository guardrails on GitHub Free), PT-067 (scheduled ops workflow, encrypted bacpac artifact), PT-070 (Azure Test Plans -> GitHub test-run checklist), PT-071 (Azure Artifacts -> GitHub Packages); new Phase 2 PT-073 (migrate/mirror to Azure DevOps). New outputs: backlog-github-issues.csv and repo-scaffold/scripts/create-github-issues.sh. |
 | 2026-09-27 | Status table filled for the Sprint 0-1 implementation (branch `feature/sprint-0-1`). |
 | 2026-09-27 | Status updated for the Sprint 2-3 batch (branch `feature/sprint-2-3`, PR #2): sales orders, user admin, hold/cancel, concurrency, routing editor, traveler + QR, floor scanning and execution, QC, scrap, live dashboard, Playwright E2E. |
+| 2026-09-28 | Rebrand: project renamed to DMB ProdTrack by DMB Websolutions (was "DMB ProdTrack"); planned host `dmb-prodtrack.runasp.net`. GitHub repo name `deo-bernal/dmb-prodtrack` unchanged. |

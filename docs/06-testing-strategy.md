@@ -102,7 +102,7 @@ Coverage is a signal, not a goal: prioritise business rules and authorization ov
 | Local (PC) | Reference data + `DemoDataSeeder` (fictitious customers "Acme Refinery", "Blue Ocean Offshore"); restored prod bacpac for migration rehearsal | Manual testing, exploratory sessions |
 | Prod (MonsterASP free site) | Reference data + fictitious demo data only (free-plan ToS: learning/testing use) | Demos, release validation, smoke tests |
 
-No real DMB data is ever used.
+No real customer data is ever used.
 
 ## 8. Manual / exploratory testing
 

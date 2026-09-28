@@ -3,7 +3,7 @@
 > **Status:** Draft v0.3 (2026-09-26) - practice project.
 > **Hosting:** **MonsterASP.NET free plan** (US$0, no card): one IIS site on **`https://dmb-prodtrack.runasp.net`** (planned name, confirm availability at sign-up; if it is taken, record the chosen `<name>.runasp.net` here and in the GitHub variable `APP_URL`), one **1 GB MSSQL** database, EU (Germany). Environments: **Local** and **Prod** only. CI/CD: GitHub Actions, `11-github-setup.md` (Azure DevOps Phase 2: `04`). Limits, costs and sources: `03-tech-stack-and-cloud.md` section 3 and [`research/monsterasp.md`](research/monsterasp.md).
 > **Never** change any `dmbwebsolutions.com` DNS record (apex, `www` or new subdomains) and never touch the Google Cloud project `find-an-agent` from this repo. The custom domain is deferred (`03` section 7).
-> The free plan is for **learning/testing only** (ToS): fictional data only, no real DMB data, no commercial use.
+> The free plan is for **learning/testing only** (ToS): fictional data only, no real customer data, no commercial use.
 
 ---
 

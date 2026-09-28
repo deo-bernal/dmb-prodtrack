@@ -2,16 +2,16 @@
 
 > **Status:** Draft v0.3 (2026-09-26) - practice project.
 > **Owner / Product Owner / Developer:** Deo (solo practice project).
-> **Disclaimer:** DMB ProdTrack is a *practice application* designed to be plausible for a manufacturer of safety identification products such as DMB Websolutions. It is **not** based on any knowledge of DMB's real internal systems, processes, volumes or data. Every business rule here is an assumption made for practice and should be treated as such.
+> **Disclaimer:** DMB ProdTrack is a *practice application* by DMB Websolutions, designed to be plausible for a manufacturer of safety identification products. It is **not** based on any real company's internal systems, processes, volumes or data. Every business rule here is an assumption made for practice and should be treated as such.
 > **Platform decision (final, 2026-09-26, v0.3 - supersedes the Google Cloud primary of v0.2):** DMB ProdTrack is hosted on the **free MonsterASP.NET plan** - **US$0, no credit card**: one IIS site on the free subdomain **`dmb-prodtrack.runasp.net`** (planned; confirm availability at sign-up) with one **1 GB MSSQL** database on EU servers. Environments are **Local** (Deo's PC) and **Prod** (MonsterASP) only. The free plan is for learning/testing, which fits this practice project; it sleeps after 30 minutes idle, has 256 MB RAM, no email, no scheduled tasks, no backups, and HTTPS (Let's Encrypt) must be renewed manually every 90 days - the design and backlog handle each of these. **Delivery tooling (2026-09-26 update): GitHub for now** - private repo `deo-bernal/dmb-prodtrack`, a **GitHub Projects** board with issues (labels per epic/feature, one milestone per sprint), **GitHub Actions** on GitHub-hosted runners (2,000 free minutes/month on private repos, no card) deploying to MonsterASP with Web Deploy, secrets in Actions secrets (`11-github-setup.md`). **Azure DevOps** remains a learning goal as a documented **Phase 2** migrate/mirror plan (`04`, `10`, PT-073). Note: GitHub Free cannot enforce branch protection or required deployment reviewers on a *private* repo - see `11` section 2 for the manual-deploy gate and the public/Pro options. Sign-in: **ASP.NET Core Identity** (optional Google sign-in). The custom domain **`prodtrack.dmbwebsolutions.com` is deferred** (upgrade path: MonsterASP Premium ~US$1.95/month first year, or Azure for Students; no code change). **Azure and Google Cloud** are optional documented alternatives (`deployTarget: monsterasp | azure | gcp`, default `monsterasp`). Deo's existing site (apex/`www` of dmbwebsolutions.com, GCP project `find-an-agent`) is never touched. Details: `03-tech-stack-and-cloud.md`.
 
 ---
 
 ## 1. Purpose
 
-Build, end to end and "the professional way", a realistic line-of-business application that exercises the skills in a Senior Developer job description at a marking-products manufacturer:
+Build, end to end and "the professional way", a realistic line-of-business application that exercises the skills of a senior .NET developer in a manufacturing (marking-products) scenario:
 
-| JD skill | Where it is practised in this project |
+| Skill | Where it is practised in this project |
 |---|---|
 | C# / .NET / SQL in Visual Studio | .NET 10 LTS solution, EF Core + SQL Server (LocalDB/Express or Docker locally, MonsterASP MSSQL in prod) |
 | Web and mobile applications | Blazor Web App (supervisor/admin, Interactive Server) + Blazor WebAssembly PWA (tablets); .NET MAUI in Phase 2 |
@@ -37,7 +37,7 @@ Working name: **DMB ProdTrack** (solution/namespace: `ProdTrack`). Alternative n
 | G3 | Test discipline | Domain + Application line coverage >= 80%; integration tests for every endpoint; E2E for main flows |
 | G4 | Documentation that drives development | Docs stay in sync with the code (checked in each PR); an AI agent can pick up any story using only the repo |
 | G5 | Zero cost | Everything stays at US$0: MonsterASP free plan, GitHub Free (private repo, 2,000 Actions minutes/month), Azure DevOps free tier in Phase 2 (5 Basic users, 1 self-hosted parallel job); no credit card anywhere (see `03` section 5) |
-| G6 | Interview-ready | Deo can explain architecture, trade-offs, pipeline and testing choices using this repo, explains the GitHub Actions setup (`11`) and answers the Azure DevOps questions in `10` confidently |
+| G6 | Explainable | Deo can explain architecture, trade-offs, pipeline and testing choices using this repo, explains the GitHub Actions setup (`11`) and answers the Azure DevOps questions in `10` confidently |
 | G7 | Portability | The same build runs locally, on MonsterASP and (optionally) on Azure or Google Cloud by configuration only; no cloud SDKs in the default build; provider contract tests pass for every storage/secret implementation |
 
 ## 4. Scope
@@ -137,7 +137,7 @@ Note on dates: Philippine public holidays in this window (for example All Saints
 | R2 | App pool sleeps after 30 min idle: cold starts and dropped Blazor circuits/SignalR connections | High | Medium | Auto-reconnect + friendly reconnect/cold-start UI (PT-072); smoke test with retries; accepted for a practice app; no keep-alive pings (fair use) |
 | R3 | 256 MB RAM limit causes recycles under load | Medium | Medium | Framework-dependent win-x86 publish, Workstation GC, OpenTelemetry off by default, bounded caches and circuit retention; measure (PT-006, PT-051) |
 | R4 | Scope creep (MES is a huge domain) | High | High | Strict MVP list; alternative targets isolated in optional Sprint 8; Phase 2 backlog for everything else |
-| R5 | Part-time availability, interview schedule | Medium | Medium | Velocity-based planning; buffer in Sprints 6-7; holiday break |
+| R5 | Part-time availability | Medium | Medium | Velocity-based planning; buffer in Sprints 6-7; holiday break |
 | R6 | Manual Let's Encrypt renewal every 90 days is forgotten -> expired certificate, WebSockets fail | Medium | Medium | Weekly cert-expiry check workflow failing at < 21 days, calendar reminder, runbook (PT-067, `08` section 6) |
 | R7 | Mistakes affecting the live site www.dmbwebsolutions.com or project `find-an-agent` (DNS edits, shared OAuth client) | Low | High | No DNS changes at all in the MVP (custom domain deferred); Google sign-in uses a new billing-free project; rules in AGENTS.md and `.cursor/rules` |
 | R8 | Portability abstractions add complexity | Medium | Medium | Abstract only file storage, secrets and telemetry export; SQL Server everywhere; Local implementations by default; contract tests |
@@ -167,7 +167,7 @@ Note on dates: Philippine public holidays in this window (for example All Saints
 - A3. One work order per sales order line; quantities in pieces (each).
 - A4. Routings are defined per product type (optionally overridden per product); linear sequence, no parallel branches in MVP.
 - A5. Operators are identified by their own ProdTrack (ASP.NET Core Identity) account in MVP, created by an Admin.
-- A6. Volumes for sizing (practice guess, not DMB data): up to 200 open work orders, 30 tablets, 10 dashboard users, ~5,000 operation events per day.
+- A6. Volumes for sizing (practice guess, not real plant data): up to 200 open work orders, 30 tablets, 10 dashboard users, ~5,000 operation events per day.
 - A7. Deo develops on Windows with Visual Studio 2026 (recommended for .NET 10 development) and/or Cursor, with SQL Server LocalDB/Express or Docker Desktop available for the local database and Testcontainers.
 - A9. Hosting: MonsterASP.NET free plan (one site, one 1 GB MSSQL DB, EU), Azure/GCP only as optional alternatives; CI/CD is GitHub Actions on GitHub-hosted runners; the GitHub repo `deo-bernal/dmb-prodtrack` is the source of truth. Azure DevOps is Phase 2 (PT-073: Azure Pipelines GitHub App or a one-way mirror, self-hosted agent).
 - A10. MonsterASP free-plan terms and limits as published on 2026-09-26 (`03` section 3.3, `research/monsterasp.md`); re-check at sign-up. Only fictional/sample data is used (the free plan forbids production and commercial use).
@@ -181,7 +181,7 @@ Note on dates: Philippine public holidays in this window (for example All Saints
 | Q1 | Is **`dmb-prodtrack.runasp.net`** available at sign-up? If not, which name (e.g. `dmbprodtrack`, `prodtrack-deo`)? | URLs in docs, OAuth redirect URIs, GitHub variable `APP_URL` | First available of those three; update `APP_URL` and docs |
 | Q2 | Does **remote SQL access** (Databases > "Users and remote") work on the **free** plan so the deploy/ops workflows and SSMS can reach the DB? (Docs imply yes, not stated explicitly.) | Workflow migrations, bacpac backups, SSMS | Assume yes; fallback: migrate on startup behind a flag + web SQL manager (`08` section 3) |
 | Q3 | Keep the GitHub repo **private** (branch protection and deployment reviewers cannot be enforced on GitHub Free) or make it **public** / use **GitHub Pro** (US$4/month, or free with the Student Developer Pack if eligible) to enable them? | PT-059, PT-007 deploy gate | Private + manual deploy gate; revisit before v1.0 |
-| Q4 | Is it acceptable to keep the name "DMB ProdTrack" on a public `runasp.net` URL and in repos, or should it be neutral (e.g. "MarkTrack")? | Avoids implying an affiliation with DMB | Keep repos private; neutral display name on the public site (and sign-in required anyway) |
+| Q4 | Keep the name "DMB ProdTrack" on the public `runasp.net` URL and in repos? | Branding | Decided 2026-09-28: the project is branded DMB Websolutions / DMB ProdTrack |
 | Q5 | Phase 2: connect Azure DevOps via the *Azure Pipelines* GitHub App (no mirror) or a one-way mirror to Azure Repos; where should the self-hosted agent run (box or your Windows PC)? | PT-073 | GitHub App option; Linux agent on the box |
 | Q6 | Blazor for the UI is proposed (`02` section 3). Prefer Razor Pages/MVC or an Angular/React front end? | UI technology choice | Blazor Web App + Blazor WASM PWA |
 | Q7 | How many hours per week can you commit? | Velocity and dates | 15-20 hours/week, ~24 points/sprint |
@@ -208,5 +208,5 @@ Note on dates: Philippine public holidays in this window (for example All Saints
 |---|---|---|
 | 2026-09-26 | 0.1 | Initial plan |
 | 2026-09-26 | 0.2 | Final platform decision: Google Cloud primary (free trial, project `dmb-prodtrack`, custom subdomains), Azure alternative; Identity auth; trial timeline; new risks and open questions; study guide `10` |
-| 2026-09-26 | 0.3 | **Final hosting decision: MonsterASP.NET free plan** (US$0, no card, `dmb-prodtrack.runasp.net`, Local + Prod only, self-hosted Azure DevOps agent). Banner, JD mapping, goals G2/G5/G7, scope (no email, custom domain deferred), sprint table (61 stories / 195 points), risks R1-R16 and open questions Q1-Q17 rewritten; Google Cloud trial content removed |
+| 2026-09-26 | 0.3 | **Final hosting decision: MonsterASP.NET free plan** (US$0, no card, `dmb-prodtrack.runasp.net`, Local + Prod only, self-hosted Azure DevOps agent). Banner, skills mapping, goals G2/G5/G7, scope (no email, custom domain deferred), sprint table (61 stories / 195 points), risks R1-R16 and open questions Q1-Q17 rewritten; Google Cloud trial content removed |
 | 2026-09-26 | 0.3b | **GitHub is the delivery tooling for now** (private repo `deo-bernal/dmb-prodtrack`, Projects + issues/milestones, Actions `ci`/`deploy`/`ops`, Actions secrets; doc `11`); Azure DevOps becomes Phase 2 (PT-073, docs `04`/`10`). Banner, JD row, G2/G5/G6, scope, sprint goals, cadence, deliverables, R1/R6/R9 (GitHub Free private-repo limits), demo step 7, A9, Q3/Q5/Q16 updated |

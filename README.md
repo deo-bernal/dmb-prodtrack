@@ -1,7 +1,7 @@
 # DMB ProdTrack
 
-> **Practice project.** A production work-order and shop-floor tracking system for a plant that makes safety identification products (pipe markers, valve tags, safety signs, labels). Built by Deo to practise the skills of a Senior Developer role (C#/.NET/SQL, web + mobile, testing, CI/CD with GitHub Actions and Azure DevOps, REST, Scrum, SDLC documentation, mentoring).
-> It is **not** affiliated with, endorsed by, or based on the internal systems of DMB Websolutions. All business rules and data are plausible assumptions.
+> **Practice project.** A production work-order and shop-floor tracking system for a plant that makes safety identification products (pipe markers, valve tags, safety signs, labels). Built by DMB Websolutions (Deo Bernal) as a portfolio project covering C#/.NET/SQL, web + mobile, testing, CI/CD with GitHub Actions and Azure DevOps, REST, Scrum and SDLC documentation.
+> The manufacturing scenario (customers, products, volumes, business rules) is fictitious and based on plausible assumptions; it does not describe any real company's systems or data.
 
 **Status:** Sprints 0-3 implemented plus most of Sprints 4-5: Identity sign-in and roles, user administration, master data, routing editor, sales orders, work orders (release, artwork approval, hold/resume/cancel with reason codes), printable traveler with QR codes, shop-floor PWA with QR scanning and operation execution (start/pause/complete, scrap, QC checklists), live SignalR dashboard, optimistic concurrency (ETag/If-Match), audit trail, CI with Playwright E2E. Product documentation (PDF) is in [`Documentations/`](Documentations/). See the status table in [`docs/05-backlog.md` section 6](docs/05-backlog.md#6-backlog-status-tracking).
 

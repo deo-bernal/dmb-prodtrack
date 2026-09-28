@@ -67,8 +67,8 @@ def render(md_path):
     <tr><th>Audience</th><td>{fields['audience']}</td></tr>
     <tr><th>Author</th><td>Deo Bernal</td></tr>
   </table>
-  <p class="disclaimer">Practice project. Not affiliated with, endorsed by, or based on the internal systems of
-  DMB Websolutions. Business rules and data are plausible assumptions.</p>
+  <p class="disclaimer">Practice project by DMB Websolutions. The manufacturing scenario, business rules and data are
+  fictitious, plausible assumptions.</p>
 </section>
 <section class="toc-page"><h1 class="toc-title">Contents</h1><ul class="toc">{toc_html}</ul></section>
 """

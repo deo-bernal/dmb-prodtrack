@@ -11,7 +11,7 @@ system that follows each job from the customer's sales order through artwork app
 execution, quality inspection and completion, and shows the live state of the floor on a dashboard.
 
 This document describes the application **as built** after the Sprint 2-3 batch (27 September 2026). It is a
-practice project: it is not affiliated with DMB Websolutions, and the business rules are plausible
+practice project by DMB Websolutions: the plant scenario, business rules and data are fictitious, plausible
 assumptions for a marking-products plant.
 
 What the current release delivers:
@@ -53,7 +53,7 @@ with minimal typing on the shop floor.
 | BO4 | Paperless QC traceability | QC checklists are recorded per operation with inspector, time, measured values and result |
 | BO5 | Reduce data entry | Operators scan the traveler QR codes instead of typing numbers |
 
-# DMB production context
+# Production context
 
 ## Product families
 

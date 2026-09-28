@@ -172,7 +172,7 @@ flowchart LR
 | No scheduled tasks | Background work only as **in-process `IHostedService`/`BackgroundService`** that tolerates the app sleeping (idempotent, catch-up on start, no exact timing guarantees). Scheduled ops checks (certificate expiry, bacpac export) run as a **scheduled GitHub Actions workflow** (`ops.yml`) instead | `02` section 8, PT-067 |
 | No backups | Weekly encrypted `.bacpac` export via `sqlpackage` in the `ops` workflow (remote access) plus manual export before risky migrations | `08` section 7, PT-067 |
 | Manual 90-day HTTPS renewal | Ops runbook + weekly certificate-expiry check in the `ops` workflow + calendar reminder | `08` section 6, PT-067 |
-| Learning-only ToS | Fictional/sample data only; no real DMB data; no commercial use | `00` section 9 |
+| Learning-only ToS | Fictional/sample data only; no real customer data; no commercial use | `00` section 9 |
 
 ## 4. Delivery tooling: GitHub now, Azure DevOps in Phase 2
 

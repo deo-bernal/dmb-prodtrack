@@ -75,5 +75,5 @@ Run build + tests before declaring a story done. Tests do not need Docker or SQL
 
 - Be explicit about assumptions; if the docs are ambiguous, choose the simplest option consistent with them, note it, and propose a doc update.
 - Keep PR-sized changes; one story per branch `feature/PT-xxx-short-name`; commit messages `PT-xxx: <imperative summary>`; PR title `PT-xxx: ...` with `Closes #<issue>` (each story is a GitHub issue whose title starts with its PT key).
-- Never invent facts about DMB Websolutions; this is a practice app with fictitious data.
+- Never present assumptions as facts about a real company; this is a DMB Websolutions practice app with a fictitious plant scenario and data.
 - Workflow changes: keep `docs/11-github-setup.md` (and `docs/08` for ops) in sync. Azure DevOps interview practice: when a story touches CI/CD or planning, mention the related Phase 2 lab in `docs/10-azure-devops-study-guide.md`.

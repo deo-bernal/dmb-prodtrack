@@ -50,17 +50,17 @@ ul.toc a::after { content: leader(".") target-counter(attr(href), page); font-we
     <tr><th>Audience</th><td>Plant management, planners, supervisors, quality, IT and project stakeholders</td></tr>
     <tr><th>Author</th><td>Deo Bernal</td></tr>
   </table>
-  <p class="disclaimer">Practice project. Not affiliated with, endorsed by, or based on the internal systems of
-  DMB Websolutions. Business rules and data are plausible assumptions.</p>
+  <p class="disclaimer">Practice project by DMB Websolutions. The manufacturing scenario, business rules and data are
+  fictitious, plausible assumptions.</p>
 </section>
-<section class="toc-page"><h1 class="toc-title">Contents</h1><ul class="toc"><li class="toc1"><a href="#executive-summary">Executive summary</a></li><li class="toc1"><a href="#purpose-and-problem-statement">Purpose and problem statement</a></li><li class="toc2"><a href="#business-objectives">Business objectives</a></li><li class="toc1"><a href="#dmb-production-context">DMB production context</a></li><li class="toc2"><a href="#product-families">Product families</a></li><li class="toc2"><a href="#stations-and-routings">Stations and routings</a></li><li class="toc1"><a href="#stakeholders-and-roles">Stakeholders and roles</a></li><li class="toc2"><a href="#role-permissions">Role permissions</a></li><li class="toc1"><a href="#business-processes">Business processes</a></li><li class="toc2"><a href="#end-to-end-flow">End-to-end flow</a></li><li class="toc2"><a href="#work-order-lifecycle">Work order lifecycle</a></li><li class="toc2"><a href="#operation-lifecycle">Operation lifecycle</a></li><li class="toc1"><a href="#business-rules">Business rules</a></li><li class="toc1"><a href="#key-performance-indicators">Key performance indicators</a></li><li class="toc1"><a href="#scope">Scope</a></li><li class="toc2"><a href="#in-scope-delivered">In scope (delivered)</a></li><li class="toc2"><a href="#out-of-scope-for-this-release-future">Out of scope for this release / future</a></li><li class="toc1"><a href="#assumptions-and-constraints">Assumptions and constraints</a></li><li class="toc1"><a href="#glossary">Glossary</a></li></ul></section>
+<section class="toc-page"><h1 class="toc-title">Contents</h1><ul class="toc"><li class="toc1"><a href="#executive-summary">Executive summary</a></li><li class="toc1"><a href="#purpose-and-problem-statement">Purpose and problem statement</a></li><li class="toc2"><a href="#business-objectives">Business objectives</a></li><li class="toc1"><a href="#production-context">Production context</a></li><li class="toc2"><a href="#product-families">Product families</a></li><li class="toc2"><a href="#stations-and-routings">Stations and routings</a></li><li class="toc1"><a href="#stakeholders-and-roles">Stakeholders and roles</a></li><li class="toc2"><a href="#role-permissions">Role permissions</a></li><li class="toc1"><a href="#business-processes">Business processes</a></li><li class="toc2"><a href="#end-to-end-flow">End-to-end flow</a></li><li class="toc2"><a href="#work-order-lifecycle">Work order lifecycle</a></li><li class="toc2"><a href="#operation-lifecycle">Operation lifecycle</a></li><li class="toc1"><a href="#business-rules">Business rules</a></li><li class="toc1"><a href="#key-performance-indicators">Key performance indicators</a></li><li class="toc1"><a href="#scope">Scope</a></li><li class="toc2"><a href="#in-scope-delivered">In scope (delivered)</a></li><li class="toc2"><a href="#out-of-scope-for-this-release-future">Out of scope for this release / future</a></li><li class="toc1"><a href="#assumptions-and-constraints">Assumptions and constraints</a></li><li class="toc1"><a href="#glossary">Glossary</a></li></ul></section>
 <main><h1 id="executive-summary">Executive summary</h1>
 <p>DMB ProdTrack is a production work-order and shop-floor tracking system for a plant that makes safety identification
 products - pipe markers, valve tags, safety signs and labels. It replaces paper travelers and spreadsheets with a single
 system that follows each job from the customer's sales order through artwork approval, release, station-by-station
 execution, quality inspection and completion, and shows the live state of the floor on a dashboard.</p>
 <p>This document describes the application <strong>as built</strong> after the Sprint 2-3 batch (27 September 2026). It is a
-practice project: it is not affiliated with DMB Websolutions, and the business rules are plausible
+practice project by DMB Websolutions: the plant scenario, business rules and data are fictitious, plausible
 assumptions for a marking-products plant.</p>
 <p>What the current release delivers:</p>
 <ul>
@@ -125,7 +125,7 @@ with minimal typing on the shop floor.</p>
 </tr>
 </tbody>
 </table>
-<h1 id="dmb-production-context">DMB production context</h1>
+<h1 id="production-context">Production context</h1>
 <h2 id="product-families">Product families</h2>
 <table>
 <thead>

@@ -25,4 +25,4 @@ Rules:
 - Add a line to the document's change log (date in Asia/Manila, short description).
 - Keep docs consistent with each other (names, routes, roles, sprint numbers). If you find an inconsistency, fix it or report it.
 - Mark hosting/GitHub/cloud prices and free tiers as "verify" with a link to the official pricing page; never invent prices.
-- Never add claims about DMB Websolutions's real systems.
+- Never add claims about any real company's systems; the plant scenario is fictitious.
