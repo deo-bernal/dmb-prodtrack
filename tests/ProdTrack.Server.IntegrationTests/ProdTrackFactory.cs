@@ -16,7 +16,7 @@ namespace ProdTrack.Server.IntegrationTests;
 public sealed class ProdTrackFactory : WebApplicationFactory<Program>, IAsyncLifetime
 {
     public const string BootstrapEmail = "admin@prodtrack.test";
-    public static readonly string BootstrapPassword = System.Guid.NewGuid().ToString("B").ToUpperInvariant() + System.Guid.NewGuid().ToString("N");
+    public static readonly string BootstrapPassword = TestPasswords.Generate();
 
     private readonly SqliteConnection _connection = SqliteDbContextExtensions.OpenInMemoryConnection();
     private readonly string _storageRoot = Path.Combine(Path.GetTempPath(), "prodtrack-it", Guid.NewGuid().ToString("N"));

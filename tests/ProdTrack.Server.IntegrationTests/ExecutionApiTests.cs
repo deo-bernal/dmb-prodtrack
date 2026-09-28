@@ -12,6 +12,7 @@ using ProdTrack.Contracts.Users;
 using ProdTrack.Contracts.WorkOrders;
 using ProdTrack.Domain.Common;
 using ProdTrack.Server.Errors;
+using ProdTrack.TestSupport;
 
 namespace ProdTrack.Server.IntegrationTests;
 
@@ -305,13 +306,14 @@ public sealed class ExecutionApiTests(ProdTrackFactory factory)
         using var admin = factory.CreateClientAs(Roles.Admin);
         using var planner = factory.CreateClientAs(Roles.Planner);
         var email = $"op{Guid.NewGuid():N}"[..14] + "@prodtrack.test";
+        var tempPassword = TestPasswords.Generate();
 
         await ExpectAsync(await planner.GetAsync(new Uri("/api/v1/users", UriKind.Relative)), HttpStatusCode.Forbidden);
         await ExpectAsync(await admin.PostAsJsonAsync("/api/v1/users", new CreateUserRequest(email, "Short Pw", "short", [Roles.Operator], null, null, null)), HttpStatusCode.BadRequest);
 
-        using var createdResponse = await admin.PostAsJsonAsync("/api/v1/users", new CreateUserRequest(email, "Olivia Operator", ("Tp1-temp-" + System.Environment.ProcessId), [Roles.Operator], "E-100", "B-100", "PRINT-01"));
+        using var createdResponse = await admin.PostAsJsonAsync("/api/v1/users", new CreateUserRequest(email, "Olivia Operator", tempPassword, [Roles.Operator], "E-100", "B-100", "PRINT-01"));
         var created = await ReadAsync<UserCreatedResponse>(createdResponse, HttpStatusCode.Created);
-        await ExpectAsync(await admin.PostAsJsonAsync("/api/v1/users", new CreateUserRequest(email, "Dup", ("Tp1-temp-" + System.Environment.ProcessId), [Roles.Operator], null, null, null)), HttpStatusCode.BadRequest);
+        await ExpectAsync(await admin.PostAsJsonAsync("/api/v1/users", new CreateUserRequest(email, "Dup", tempPassword, [Roles.Operator], null, null, null)), HttpStatusCode.BadRequest);
 
         using var get = await admin.GetAsync(new Uri($"/api/v1/users/{created.Id}", UriKind.Relative));
         var user = await ReadAsync<UserDetailDto>(get, HttpStatusCode.OK);
@@ -329,7 +331,7 @@ public sealed class ExecutionApiTests(ProdTrackFactory factory)
         await ExpectAsync(await admin.SendAsync(stale), HttpStatusCode.PreconditionFailed);
 
         await ExpectAsync(await admin.PostAsJsonAsync($"/api/v1/users/{created.Id}/active", new SetUserActiveRequest(false)), HttpStatusCode.NoContent);
-        await ExpectAsync(await admin.PostAsJsonAsync($"/api/v1/users/{created.Id}/reset-password", new ResetPasswordRequest(("Tp1-another-" + System.Environment.ProcessId))), HttpStatusCode.NoContent);
+        await ExpectAsync(await admin.PostAsJsonAsync($"/api/v1/users/{created.Id}/reset-password", new ResetPasswordRequest(TestPasswords.Generate())), HttpStatusCode.NoContent);
         var users = await admin.GetFromJsonAsync<List<UserSummaryDto>>("/api/v1/users");
         users!.Single(u => u.Id == created.Id).IsActive.Should().BeFalse();
     }

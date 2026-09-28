@@ -16,8 +16,8 @@ namespace ProdTrack.E2E.Tests;
 public sealed class E2EServer : WebApplicationFactory<Program>, IAsyncLifetime
 {
     public const string AdminEmail = "admin@prodtrack.e2e";
-    public static readonly string InitialPassword = System.Guid.NewGuid().ToString("B").ToUpperInvariant() + System.Guid.NewGuid().ToString("N");
-    public static readonly string NewPassword = System.Guid.NewGuid().ToString("B").ToUpperInvariant() + System.Guid.NewGuid().ToString("N");
+    public static readonly string InitialPassword = TestPasswords.Generate();
+    public static readonly string NewPassword = TestPasswords.Generate();
 
     private readonly SqliteConnection _connection = SqliteDbContextExtensions.OpenInMemoryConnection();
     private readonly string _storageRoot = Path.Combine(Path.GetTempPath(), "prodtrack-e2e", Guid.NewGuid().ToString("N"));

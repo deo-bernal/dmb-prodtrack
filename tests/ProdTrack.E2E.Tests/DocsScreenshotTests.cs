@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Microsoft.Playwright;
+using ProdTrack.TestSupport;
 using static Microsoft.Playwright.Assertions;
 
 namespace ProdTrack.E2E.Tests;
@@ -114,7 +115,7 @@ public sealed class DocsScreenshotTests(E2EServer server)
         await page.GetByTestId("user-name").FillAsync("Maria Santos");
         await page.Locator("#u-badge").FillAsync("B-0142");
         await page.GetByTestId("role-Operator").CheckAsync();
-        await page.GetByTestId("user-password").FillAsync((System.Guid.NewGuid().ToString("B").ToUpperInvariant() + System.Guid.NewGuid().ToString("N")));
+        await page.GetByTestId("user-password").FillAsync(TestPasswords.Generate());
         await ShotAsync(page, "19-user-new");
         await page.GetByTestId("user-save").ClickAsync();
         await Expect(page.GetByTestId("user-disable")).ToBeVisibleAsync();
