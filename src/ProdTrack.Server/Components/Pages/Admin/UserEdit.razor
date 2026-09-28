@@ -1,0 +1,216 @@
+@page "/admin/users/new"
+@page "/admin/users/{Id}"
+@attribute [Authorize(Policy = Policies.ManageUsers)]
+@rendermode InteractiveServer
+@using ProdTrack.Application.Stations
+@using ProdTrack.Application.Stations.GetStations
+@using ProdTrack.Application.Users
+@inject UseCaseDispatcher Dispatcher
+@inject NavigationManager Navigation
+
+<PageTitle>@(IsNew ? "New user" : displayName) · ProdTrack</PageTitle>
+<h1>
+    @(IsNew ? "New user" : displayName)
+    @if (!IsNew && user is not null)
+    {
+        <StatusBadge Status="@(user.IsActive ? "Active" : "Disabled")" />
+    }
+</h1>
+
+<ErrorAlert Error="error" />
+@if (notice is not null)
+{
+    <div class="alert alert-success" role="status" data-testid="user-notice">@notice</div>
+}
+
+<div class="row g-3">
+    <div class="col-md-5">
+        <label class="form-label" for="u-email">Email (sign-in name)</label>
+        <input id="u-email" class="form-control" @bind="email" disabled="@(!IsNew)" data-testid="user-email" />
+    </div>
+    <div class="col-md-5">
+        <label class="form-label" for="u-name">Display name</label>
+        <input id="u-name" class="form-control" @bind="displayName" data-testid="user-name" />
+    </div>
+    <div class="col-md-3">
+        <label class="form-label" for="u-emp">Employee #</label>
+        <input id="u-emp" class="form-control" @bind="employeeNumber" />
+    </div>
+    <div class="col-md-3">
+        <label class="form-label" for="u-badge">Badge #</label>
+        <input id="u-badge" class="form-control" @bind="badgeNumber" />
+    </div>
+    <div class="col-md-4">
+        <label class="form-label" for="u-station">Home station</label>
+        <select id="u-station" class="form-select" @bind="homeStation">
+            <option value="">(none)</option>
+            @foreach (var s in stations)
+            {
+                <option value="@s.Code">@s.Code · @s.Name</option>
+            }
+        </select>
+    </div>
+    <div class="col-12">
+        <span class="form-label d-block">Roles</span>
+        @foreach (var role in Roles.All)
+        {
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="checkbox" id="role-@role" checked="@selectedRoles.Contains(role)" @onchange="e => ToggleRole(role, (bool)e.Value!)" data-testid="role-@role" />
+                <label class="form-check-label" for="role-@role">@role</label>
+            </div>
+        }
+    </div>
+    @if (IsNew)
+    {
+        <div class="col-md-5">
+            <label class="form-label" for="u-pw">Temporary password (min 12 characters)</label>
+            <input id="u-pw" type="password" autocomplete="new-password" class="form-control" @bind="temporaryPassword" data-testid="user-password" />
+            <div class="form-text">The user must change it at first sign-in.</div>
+        </div>
+    }
+</div>
+
+<div class="mt-3">
+    <button class="btn btn-primary" @onclick="SaveAsync" data-testid="user-save">@(IsNew ? "Create user" : "Save changes")</button>
+    <a class="btn btn-link" href="admin/users">Back to users</a>
+</div>
+
+@if (!IsNew && user is not null)
+{
+    <hr />
+    <div class="row g-3">
+        <div class="col-md-6">
+            <h2 class="h5">Access</h2>
+            @if (user.IsActive)
+            {
+                <button class="btn btn-outline-danger" @onclick="() => SetActiveAsync(false)" data-testid="user-disable">Disable user</button>
+                <div class="form-text">Disabled users cannot sign in; open sessions end at the next security revalidation.</div>
+            }
+            else
+            {
+                <button class="btn btn-outline-success" @onclick="() => SetActiveAsync(true)" data-testid="user-enable">Enable user</button>
+            }
+        </div>
+        <div class="col-md-6">
+            <h2 class="h5">Reset password</h2>
+            <div class="input-group">
+                <input type="password" autocomplete="new-password" class="form-control" placeholder="New temporary password" @bind="resetPassword" aria-label="New temporary password" />
+                <button class="btn btn-outline-warning" @onclick="ResetAsync" data-testid="user-reset-password">Reset</button>
+            </div>
+            <div class="form-text">The user must change it at next sign-in. Lockout is cleared.</div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public string? Id { get; set; }
+
+    private bool IsNew => string.IsNullOrEmpty(Id);
+
+    private UserDetailModel? user;
+    private IReadOnlyList<StationModel> stations = [];
+    private readonly HashSet<string> selectedRoles = new(StringComparer.Ordinal);
+    private string? email;
+    private string? displayName;
+    private string? employeeNumber;
+    private string? badgeNumber;
+    private string? homeStation;
+    private string? temporaryPassword;
+    private string? resetPassword;
+    private Error? error;
+    private string? notice;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        var st = await Dispatcher.QueryAsync(new GetStationsQuery());
+        if (st.IsSuccess)
+        {
+            stations = st.Value;
+        }
+
+        if (!IsNew)
+        {
+            await LoadAsync();
+        }
+    }
+
+    private async Task LoadAsync()
+    {
+        var result = await Dispatcher.QueryAsync(new GetUserQuery(Id!));
+        error = result.Error;
+        if (result.IsSuccess)
+        {
+            user = result.Value;
+            (email, displayName, employeeNumber, badgeNumber, homeStation) = (user.Email, user.DisplayName, user.EmployeeNumber, user.BadgeNumber, user.HomeStationCode);
+            selectedRoles.Clear();
+            selectedRoles.UnionWith(user.Roles);
+        }
+    }
+
+    private void ToggleRole(string role, bool on)
+    {
+        if (on)
+        {
+            selectedRoles.Add(role);
+        }
+        else
+        {
+            selectedRoles.Remove(role);
+        }
+    }
+
+    private static string? Blank(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
+    private async Task SaveAsync()
+    {
+        notice = null;
+        var roles = Roles.All.Where(selectedRoles.Contains).ToList();
+        if (IsNew)
+        {
+            var created = await Dispatcher.SendAsync(new CreateUserCommand(
+                email ?? string.Empty, displayName ?? string.Empty, temporaryPassword ?? string.Empty, roles, Blank(employeeNumber), Blank(badgeNumber), Blank(homeStation)));
+            error = created.Error;
+            if (created.IsSuccess)
+            {
+                Navigation.NavigateTo($"admin/users/{created.Value.Id}");
+            }
+
+            return;
+        }
+
+        var updated = await Dispatcher.SendAsync(new UpdateUserCommand(
+            Id!, displayName ?? string.Empty, roles, Blank(employeeNumber), Blank(badgeNumber), Blank(homeStation), user?.Version));
+        error = updated.Error;
+        if (updated.IsSuccess)
+        {
+            notice = "Saved.";
+            await LoadAsync();
+        }
+    }
+
+    private async Task SetActiveAsync(bool active)
+    {
+        notice = null;
+        var result = await Dispatcher.SendAsync(new SetUserActiveCommand(Id!, active));
+        error = result.Error;
+        if (result.IsSuccess)
+        {
+            notice = active ? "User enabled." : "User disabled.";
+            await LoadAsync();
+        }
+    }
+
+    private async Task ResetAsync()
+    {
+        notice = null;
+        var result = await Dispatcher.SendAsync(new ResetUserPasswordCommand(Id!, resetPassword ?? string.Empty));
+        error = result.Error;
+        if (result.IsSuccess)
+        {
+            resetPassword = null;
+            notice = "Password reset. Give the user the temporary password; they must change it at next sign-in.";
+            await LoadAsync();
+        }
+    }
+}

@@ -30,4 +30,13 @@ public static class WorkOrderErrors
 
     public static Error ArtworkProofNotPending(int version) =>
         Error.BusinessRule("WorkOrder.ArtworkProofNotPending", $"Artwork proof version {version} is not pending approval.");
+
+    public static Error OnHold(string? reason) =>
+        Error.BusinessRule("WorkOrder.OnHold", string.IsNullOrEmpty(reason) ? "The work order is on hold." : $"The work order is on hold ({reason}).");
+
+    public static Error HasCompletedOperations =>
+        Error.BusinessRule("WorkOrder.HasCompletedOperations", "A work order with completed operations cannot be cancelled; put it on hold instead.");
+
+    public static Error PreviousStepNotComplete =>
+        Error.BusinessRule("Operation.PreviousStepNotComplete", "The previous operation is not complete yet.");
 }

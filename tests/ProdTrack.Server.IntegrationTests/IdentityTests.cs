@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
 using ProdTrack.Application.Security;
 using ProdTrack.Infrastructure.Identity;
+using ProdTrack.TestSupport;
 
 namespace ProdTrack.Server.IntegrationTests;
 
@@ -30,11 +31,12 @@ public sealed partial class IdentityTests(ProdTrackFactory factory)
     public async Task Five_failed_sign_ins_lock_the_account()
     {
         const string email = "lockout@prodtrack.test";
+        var password = TestPasswords.Generate();
         await using (var scope = factory.Services.CreateAsyncScope())
         {
             var users = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
             var user = new AppUser { UserName = email, Email = email, DisplayName = "Lockout Test" };
-            (await users.CreateAsync(user, ("Tp1-correct-" + System.Environment.ProcessId))).Succeeded.Should().BeTrue();
+            (await users.CreateAsync(user, password)).Succeeded.Should().BeTrue();
             await users.AddToRoleAsync(user, Roles.Operator);
         }
 
@@ -45,7 +47,7 @@ public sealed partial class IdentityTests(ProdTrackFactory factory)
             response.StatusCode.Should().Be(attempt < 5 ? HttpStatusCode.OK : HttpStatusCode.Redirect);
         }
 
-        using var locked = await PostLoginAsync(client, email, ("Tp1-correct-" + System.Environment.ProcessId));
+        using var locked = await PostLoginAsync(client, email, password);
         locked.StatusCode.Should().Be(HttpStatusCode.Redirect);
         locked.Headers.Location!.ToString().Should().Contain("account/lockout");
     }
@@ -54,16 +56,17 @@ public sealed partial class IdentityTests(ProdTrackFactory factory)
     public async Task Successful_sign_in_forces_password_change_for_temporary_accounts()
     {
         const string email = "temp@prodtrack.test";
+        var password = TestPasswords.Generate();
         await using (var scope = factory.Services.CreateAsyncScope())
         {
             var users = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
             var user = new AppUser { UserName = email, Email = email, DisplayName = "Temp", MustChangePassword = true };
-            (await users.CreateAsync(user, ("Tp1-temporary-" + System.Environment.ProcessId))).Succeeded.Should().BeTrue();
+            (await users.CreateAsync(user, password)).Succeeded.Should().BeTrue();
             await users.AddToRoleAsync(user, Roles.Planner);
         }
 
         using var client = factory.CreateAnonymousClient();
-        using var login = await PostLoginAsync(client, email, ("Tp1-temporary-" + System.Environment.ProcessId));
+        using var login = await PostLoginAsync(client, email, password);
         login.StatusCode.Should().Be(HttpStatusCode.Redirect);
         login.Headers.Location!.ToString().Should().Contain("account/change-password");
 
@@ -80,15 +83,16 @@ public sealed partial class IdentityTests(ProdTrackFactory factory)
     public async Task Deactivated_users_cannot_sign_in()
     {
         const string email = "inactive@prodtrack.test";
+        var password = TestPasswords.Generate();
         await using (var scope = factory.Services.CreateAsyncScope())
         {
             var users = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
             var user = new AppUser { UserName = email, Email = email, DisplayName = "Inactive", IsActive = false };
-            (await users.CreateAsync(user, ("Tp1-inactive-" + System.Environment.ProcessId))).Succeeded.Should().BeTrue();
+            (await users.CreateAsync(user, password)).Succeeded.Should().BeTrue();
         }
 
         using var client = factory.CreateAnonymousClient();
-        using var response = await PostLoginAsync(client, email, ("Tp1-inactive-" + System.Environment.ProcessId));
+        using var response = await PostLoginAsync(client, email, password);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         (await response.Content.ReadAsStringAsync()).Should().Contain("deactivated");

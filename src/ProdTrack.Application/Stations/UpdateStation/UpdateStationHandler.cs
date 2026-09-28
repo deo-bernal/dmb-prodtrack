@@ -15,6 +15,11 @@ internal sealed class UpdateStationHandler(IAppDbContext db) : ICommandHandler<U
             return StationErrors.NotFound(command.Id);
         }
 
+        if (!ConcurrencyErrors.Matches(station.RowVersion, command.ExpectedVersion))
+        {
+            return ConcurrencyErrors.StaleVersion;
+        }
+
         var result = station.Update(command.Name, command.Type, command.WorkCenter);
         if (result.IsFailure)
         {

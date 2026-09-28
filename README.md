@@ -1,9 +1,9 @@
 # DMB ProdTrack
 
-> **Practice project.** A production work-order and shop-floor tracking system for a plant that makes safety identification products (pipe markers, valve tags, safety signs, labels). Built by Deo to practise the skills of a Senior Developer role (C#/.NET/SQL, web + mobile, testing, CI/CD with GitHub Actions and Azure DevOps, REST, Scrum, SDLC documentation, mentoring).
-> It is **not** affiliated with, endorsed by, or based on the internal systems of DMB Websolutions. All business rules and data are plausible assumptions.
+> **Practice project.** A production work-order and shop-floor tracking system for a plant that makes safety identification products (pipe markers, valve tags, safety signs, labels). Built by DMB Websolutions (Deo Bernal) as a portfolio project covering C#/.NET/SQL, web + mobile, testing, CI/CD with GitHub Actions and Azure DevOps, REST, Scrum and SDLC documentation.
+> The manufacturing scenario (customers, products, volumes, business rules) is fictitious and based on plausible assumptions; it does not describe any real company's systems or data.
 
-**Status:** Sprint 0-1 foundation implemented (plus parts of Sprint 2): solution skeleton, Identity sign-in and roles, master data, work orders with release and artwork approval, audit trail, CI. See the status table in [`docs/05-backlog.md` section 6](docs/05-backlog.md#6-backlog-status-tracking).
+**Status:** Sprints 0-3 implemented plus most of Sprints 4-5: Identity sign-in and roles, user administration, master data, routing editor, sales orders, work orders (release, artwork approval, hold/resume/cancel with reason codes), printable traveler with QR codes, shop-floor PWA with QR scanning and operation execution (start/pause/complete, scrap, QC checklists), live SignalR dashboard, optimistic concurrency (ETag/If-Match), audit trail, CI with Playwright E2E. Product documentation (PDF) is in [`Documentations/`](Documentations/). See the status table in [`docs/05-backlog.md` section 6](docs/05-backlog.md#6-backlog-status-tracking).
 
 **Hosting (final):** the **free MonsterASP.NET plan** - US$0, no credit card - one IIS site at **https://dmb-prodtrack.runasp.net** (planned name, confirm at sign-up) with one 1 GB MSSQL database (EU). Environments: **Local** and **Prod** only. The free plan sleeps after 30 minutes idle, has 256 MB RAM, no email, no backups and needs a manual HTTPS renewal every 90 days - the design and backlog handle each one ([`docs/03`](docs/03-tech-stack-and-cloud.md), [`docs/research/monsterasp.md`](docs/research/monsterasp.md)). Custom domain `prodtrack.dmbwebsolutions.com` is deferred; Azure/Google Cloud are optional documented alternatives.
 
@@ -51,47 +51,88 @@ Roles: Admin, Planner, Supervisor, Operator, QC, Viewer. Full audit trail.
 
 Tests need neither SQL Server nor Docker (they use SQLite in-memory, [ADR-0010](docs/adr/0010-sqlite-in-memory-for-tests.md)).
 
-### Command line
+### Run locally (command line)
+
+LocalDB (`(localdb)\MSSQLLocalDB`, database `ProdTrack`) is the default; the connection string is in
+`src/ProdTrack.Server/appsettings.Development.json`. In **Development** the app applies pending EF Core migrations and
+seeds reference data on startup (`Database:MigrateOnStartup=true`), so a plain run works on a clean machine.
 
 ```powershell
 git clone https://github.com/deo-bernal/dmb-prodtrack.git
 cd dmb-prodtrack
-dotnet tool restore                      # dotnet-ef, reportgenerator (local tools)
+dotnet tool restore                      # dotnet-ef, reportgenerator (repo-local tools)
 dotnet build ProdTrack.slnx
-dotnet test ProdTrack.slnx
-
-# Create/upgrade the LocalDB database (connection string in appsettings.Development.json)
-dotnet ef database update -p src/ProdTrack.Infrastructure -s src/ProdTrack.Server
+dotnet test ProdTrack.slnx               # unit + integration + E2E (no SQL Server needed)
 
 dotnet run --project src/ProdTrack.Server --launch-profile https
 # https://localhost:5001          back office (sign in)
-# https://localhost:5001/floor/   shop-floor PWA shell
+# https://localhost:5001/floor/   shop-floor PWA (station queue, scan, execute operations)
 # https://localhost:5001/swagger  API docs (Development only, sign in first)
 # https://localhost:5001/health   readiness (database check); /health/live liveness
 ```
 
+Stop the app with Ctrl+C.
+
+**Apply migrations manually** (optional - e.g. to inspect the schema before the first run, or with `MigrateOnStartup=false`):
+
+```powershell
+dotnet ef database update -p src/ProdTrack.Infrastructure -s src/ProdTrack.Server
+```
+
+**Reset the local database** (drops all local data; the next run re-creates and re-seeds it):
+
+```powershell
+dotnet ef database drop -f -p src/ProdTrack.Infrastructure -s src/ProdTrack.Server
+dotnet ef database update -p src/ProdTrack.Infrastructure -s src/ProdTrack.Server   # or just run the app
+```
+
+If LocalDB itself misbehaves: `sqllocaldb stop MSSQLLocalDB` then `sqllocaldb start MSSQLLocalDB`.
+
 **First sign-in (Development only):** on an empty database the app creates the bootstrap admin
 `admin@prodtrack.local` with the documented development password `ChangeMe!Dev2026` (from
-`appsettings.Development.json`) and asks you to change it. Demo products and reference data
-(stations, ASME A13.1 colour schemes, ANSI Z535 signal words, reason codes, v1 routings) are seeded too.
+`appsettings.Development.json`) and asks you to change it. Then create real users under **Admin > Users**.
+Demo products and reference data (stations, ASME A13.1 colour schemes, ANSI Z535 signal words, reason codes,
+v1 routings, QC checklists) are seeded too.
 Prefer your own password: `dotnet user-secrets --project src/ProdTrack.Server set "Auth:BootstrapAdmin:Password" "<12+ chars>"`
 before the first run. Outside Development the bootstrap password must come from host configuration.
 
 Optional development user picker (one user per role, no passwords):
 `dotnet user-secrets --project src/ProdTrack.Server set "Auth:Mode" "Dev"` (refused outside Development).
 
+**Shop-floor scanning:** open `/floor/`, pick a station, then scan a traveler QR code. Camera scanning uses the browser
+`BarcodeDetector` API (Chrome/Edge on Android, ChromeOS, macOS; allow camera access). Where it is not available, type
+or paste the code (`WO-2026-000001` or `OP:WO-2026-000001:20`) or use a USB/Bluetooth keyboard-wedge scanner.
+Browsers only allow the camera on `https://` or `localhost`.
+
 Using Docker instead of LocalDB: copy `.env.example` to `.env`, set `MSSQL_SA_PASSWORD`, run `docker compose up -d sql`,
 then store the connection string with
 `dotnet user-secrets --project src/ProdTrack.Server set "ConnectionStrings:ProdTrack" "Server=localhost,1433;Database=ProdTrack;User Id=sa;Password=<pwd>;TrustServerCertificate=True"`.
 
-### Visual Studio
+### Run locally (Visual Studio 2026)
 
 1. Open `ProdTrack.slnx` (File > Open > Project/Solution).
-2. Tools > Command Line > Developer PowerShell: `dotnet tool restore` then
-   `dotnet ef database update -p src/ProdTrack.Infrastructure -s src/ProdTrack.Server`
-   (or Package Manager Console: `Update-Database` with default project `ProdTrack.Infrastructure` and startup project `ProdTrack.Server`).
-3. Set **ProdTrack.Server** as the startup project, choose the **https** launch profile, press F5.
-4. Test Explorer runs all xUnit tests (`Category=Unit|Integration`, `Story=PT-xxx` traits).
+2. Set **ProdTrack.Server** as the startup project, choose the **https** launch profile and press **F5**.
+   The database is created, migrated and seeded on first start (Development). Sign in as the bootstrap admin.
+3. Test Explorer runs all tests (`Category=Unit|Integration|E2E`, `Story=PT-xxx` traits).
+4. Optional: Tools > Command Line > Developer PowerShell for `dotnet ef ...` commands (or Package Manager Console:
+   `Update-Database` / `Drop-Database` with default project `ProdTrack.Infrastructure`).
+
+Hot reload is disabled for the WebAssembly shop-floor project (`WasmEnableHotReload=false`) because its reload module
+breaks the Server-hosted pages; restart the app after changing `ProdTrack.ShopFloor`.
+
+### End-to-end tests (Playwright)
+
+`tests/ProdTrack.E2E.Tests` starts the app in-process on a free local port (SQLite in-memory, Identity sign-in) and drives
+headless Chromium through sign-in, creating and releasing a work order, and running an operation on `/floor`.
+
+```powershell
+dotnet test tests/ProdTrack.E2E.Tests          # first run downloads Chromium to %LOCALAPPDATA%\ms-playwright (user-local)
+$env:PRODTRACK_E2E_HEADED = "1"                 # optional: watch the browser
+```
+
+Failure screenshots go to `%TEMP%\prodtrack-e2e-failures`. Set `PRODTRACK_DOCS_SCREENSHOTS=<folder>` and run
+`dotnet test tests/ProdTrack.E2E.Tests --filter "FullyQualifiedName~Capture"` to regenerate the user-guide screenshots.
+CI runs the same tests in the `e2e` job (no secrets).
 
 Logs are written as compact JSON to `src/ProdTrack.Server/App_Data/logs/` (and the console in Development);
 uploaded artwork goes to `App_Data/files/`. Both folders are git-ignored and never deployed.
@@ -107,6 +148,7 @@ uploaded artwork goes to `App_Data/files/`. Both folders are git-ignored and nev
 ├─ .githooks/pre-push             local guard against pushing to main (git config core.hooksPath .githooks)
 ├─ deploy/                        app_offline.htm, appsettings.Production.template.json (no secrets)
 ├─ scripts/create-github-issues.sh  Generated: labels, milestones, issues from the backlog (gh, dry run by default)
+├─ Documentations/               Product PDFs (User Guide, Business, Technical) + source/ (HTML, images)
 ├─ docs/
 │  ├─ 00-project-plan.md          Goals, scope, phases, sprints, risks, assumptions, OPEN QUESTIONS
 │  ├─ 01-business-requirements.md BRD: processes, personas, FR/NFR, KPIs, glossary
@@ -128,7 +170,7 @@ uploaded artwork goes to `App_Data/files/`. Both folders are git-ignored and nev
 ├─ src/                           ProdTrack.Domain, .Application, .Infrastructure, .Contracts, .ApiClient,
 │                                 .UI.Shared, .ShopFloor (PWA), .Server (API + SignalR + Blazor host)
 ├─ tests/                         Domain, Application, Infrastructure, Architecture, Server.IntegrationTests,
-│                                 TestSupport (SQLite in-memory helpers); E2E arrives with PT-029
+│                                 TestSupport (SQLite in-memory helpers), E2E.Tests (Playwright)
 ├─ infra/azure/                   (Sprint 8, optional) Bicep for the Azure alternative
 └─ docker-compose.yml             optional local SQL Server (LocalDB works too)
 ```

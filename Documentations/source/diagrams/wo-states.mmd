@@ -1,0 +1,16 @@
+stateDiagram-v2
+  [*] --> Draft
+  Draft --> Released: release (artwork approved if required)
+  Draft --> Cancelled: cancel (reason)
+  Draft --> [*]: delete
+  Released --> InProgress: first operation started
+  Released --> OnHold: hold (reason code)
+  InProgress --> OnHold: hold / QC fail
+  OnHold --> Released: resume
+  OnHold --> InProgress: resume
+  Released --> Cancelled: cancel (no completed step)
+  OnHold --> Cancelled: cancel (no completed step)
+  InProgress --> Cancelled: cancel (no completed step)
+  InProgress --> Completed: last operation completed
+  Completed --> [*]
+  Cancelled --> [*]

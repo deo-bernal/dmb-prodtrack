@@ -29,6 +29,7 @@ internal static class WebSetup
         services.AddScoped<UseCaseDispatcher>();
 
         services.AddSignalR();
+        services.AddSingleton<IRealtimeFeed, RealtimeFeed>();
         services.AddScoped<INotifier, SignalRNotifier>();
 
         services.AddOpenApi();
@@ -67,7 +68,8 @@ internal static class WebSetup
         }
 
         app.UseMiddleware<SecurityHeadersMiddleware>();
-        app.UseBlazorFrameworkFiles("/floor");
+        // The /floor WebAssembly files (framework, compressed variants) are served by MapStaticAssets; the legacy
+        // UseBlazorFrameworkFiles middleware conflicts with endpoint routing for pre-compressed assets.
         app.UseStaticFiles();
         app.UseAuthentication();
         app.UseMiddleware<UserLogContextMiddleware>();

@@ -1836,7 +1836,7 @@ body=$(cat <<'__PT_BODY__'
 
 **Points:** 8 | **Sprint:** Phase 2 | **Epic:** E13 Phase 2 and Later (not scheduled) | **Feature:** F13.1 Phase 2 candidates
 
-**Notes:** No assumption is made about DMB's real ERP.
+**Notes:** No assumption is made about any real ERP.
 
 ### Acceptance criteria
 

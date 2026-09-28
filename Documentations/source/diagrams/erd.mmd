@@ -1,0 +1,30 @@
+erDiagram
+  SalesOrder ||--|{ SalesOrderLine : has
+  SalesOrderLine |o--o| WorkOrder : "generates"
+  Product ||--o{ SalesOrderLine : "ordered as"
+  Product ||--o{ WorkOrder : "made as"
+  Routing ||--|{ RoutingStep : has
+  Station ||--o{ RoutingStep : "performed at"
+  Routing ||--o{ WorkOrder : "snapshot of"
+  WorkOrder ||--o{ Operation : "released into"
+  WorkOrder ||--o{ ArtworkProof : has
+  Station ||--o{ Operation : "runs at"
+  Operation ||--o{ OperationEvent : logs
+  Operation ||--o{ ScrapRecord : logs
+  Operation ||--o{ QcInspection : "inspected by"
+  QcChecklistTemplate ||--|{ QcChecklistItem : has
+  QcInspection ||--|{ QcResultItem : records
+  QcChecklistItem ||--o{ QcResultItem : "answered by"
+  ReasonCode ||--o{ ScrapRecord : explains
+  ReasonCode ||--o{ OperationEvent : explains
+  SalesOrder { string Number "SO-yyyy-nnnnn" string CustomerName string PoNumber date DueDate string Status }
+  SalesOrderLine { int LineNumber int ProductId int Quantity string Legend json Spec }
+  WorkOrder { string Number "WO-yyyy-nnnnnn" string Status int Quantity int CompletedQuantity int Priority date DueDate string HoldReason string StatusBeforeHold string CancelReason rowversion RowVersion }
+  Operation { int Sequence string Status int InputQuantity int GoodQuantity int ScrapQuantity datetime StartedAtUtc string StartedBy rowversion RowVersion }
+  Product { string Sku string Name string ProductType bool RequiresArtworkApproval json DefaultSpec }
+  Routing { string ProductType int Version bool IsCurrent }
+  RoutingStep { int Sequence decimal SetupMinutes decimal StdMinutesPerUnit bool AllowOverlap }
+  Station { string Code string Name string Type bool IsActive }
+  ReasonCode { string Code string Category bool IsActive }
+  QcInspection { string Result int SampleSize string InspectorId }
+  ArtworkProof { int Version string Status string FileKey }

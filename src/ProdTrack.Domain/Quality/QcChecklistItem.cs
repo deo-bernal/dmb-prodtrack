@@ -4,8 +4,20 @@ namespace ProdTrack.Domain.Quality;
 
 public sealed class QcChecklistItem : Entity
 {
+    public const int DescriptionMaxLength = 200;
+
     private QcChecklistItem()
     {
+    }
+
+    internal QcChecklistItem(QcChecklistItemDefinition definition)
+    {
+        Sequence = definition.Sequence;
+        Description = definition.Description.Trim();
+        Kind = definition.Kind;
+        MinValue = definition.MinValue;
+        MaxValue = definition.MaxValue;
+        Unit = string.IsNullOrWhiteSpace(definition.Unit) ? null : definition.Unit.Trim();
     }
 
     public int TemplateId { get; private set; }

@@ -3,32 +3,47 @@
 @rendermode InteractiveServer
 @using ProdTrack.Application.Routings
 @using ProdTrack.Application.Routings.GetRoutings
+@using ProdTrack.Domain.Products
 @inject UseCaseDispatcher Dispatcher
 
 <PageTitle>Routings · ProdTrack</PageTitle>
 <h1>Routings</h1>
-<p class="text-muted">Current routing per product type. New versions are created through the API (<code>POST /api/v1/routings</code>); released work orders keep the version they were released with.</p>
+<p class="text-muted">Current routing per product type. Editing creates a new version; released work orders keep the version they were released with.</p>
 
 <ErrorAlert Error="error" />
-@foreach (var r in routings)
+@foreach (var productType in Enum.GetValues<ProductType>())
 {
-    <div class="card mb-3">
-        <div class="card-header">
-            <strong>@r.ProductType</strong> · v@r.Version · @r.Name
-            @if (r.IsCurrent)
-            {
-                <span class="badge text-bg-success ms-2">Current</span>
-            }
-        </div>
-        <table class="table table-sm mb-0">
-            <thead><tr><th>#</th><th>Station</th><th class="text-end">Setup (min)</th><th class="text-end">Std min/unit</th><th>Overlap</th></tr></thead>
-            <tbody>
-                @foreach (var s in r.Steps)
+    var r = routings.FirstOrDefault(x => x.ProductType == productType);
+    <div class="card mb-3" data-testid="routing-@productType">
+        <div class="card-header d-flex align-items-center">
+            <span class="me-auto">
+                <strong>@productType</strong>
+                @if (r is not null)
                 {
-                    <tr><td>@s.Sequence</td><td>@s.StationCode · @s.StationName</td><td class="text-end">@s.SetupMinutes</td><td class="text-end">@s.StdMinutesPerUnit</td><td>@(s.AllowOverlap ? "Yes" : "No")</td></tr>
+                    <span> · v@(r.Version) · @r.Name</span>
+                    <span class="badge text-bg-success ms-2">Current</span>
                 }
-            </tbody>
-        </table>
+                else
+                {
+                    <span class="text-muted"> · no routing</span>
+                }
+            </span>
+            <AuthorizeView Policy="@Policies.ManageProductsAndRoutings">
+                <a class="btn btn-sm btn-outline-primary" href="routings/@productType/edit" data-testid="edit-routing-@productType">Edit (new version)</a>
+            </AuthorizeView>
+        </div>
+        @if (r is not null)
+        {
+            <table class="table table-sm mb-0">
+                <thead><tr><th>#</th><th>Station</th><th class="text-end">Setup (min)</th><th class="text-end">Std min/unit</th><th>Overlap</th></tr></thead>
+                <tbody>
+                    @foreach (var s in r.Steps)
+                    {
+                        <tr><td>@s.Sequence</td><td>@s.StationCode · @s.StationName</td><td class="text-end">@s.SetupMinutes</td><td class="text-end">@s.StdMinutesPerUnit</td><td>@(s.AllowOverlap ? "Yes" : "No")</td></tr>
+                    }
+                </tbody>
+            </table>
+        }
     </div>
 }
 

@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Browser end-to-end tests (PT-029): the real Server on Kestrel (http://localhost:<free port>, Identity sign-in,
+    SQLite in-memory) driven by Playwright Chromium. Local-only: run `dotnet test tests/ProdTrack.E2E.Tests`.
+    Chromium is downloaded on first run into the user profile (%LOCALAPPDATA%\ms-playwright or ~/.cache/ms-playwright),
+    or into PLAYWRIGHT_BROWSERS_PATH if set. Nothing is installed system-wide.
+  -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\ProdTrack.Server\ProdTrack.Server.csproj" />
+    <ProjectReference Include="..\ProdTrack.TestSupport\ProdTrack.TestSupport.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+    <PackageReference Include="Microsoft.Playwright" />
+  </ItemGroup>
+</Project>

@@ -31,6 +31,8 @@ You are working on **DMB ProdTrack**, a practice .NET 10 application (production
 dotnet restore
 dotnet build ProdTrack.slnx -warnaserror
 dotnet test ProdTrack.slnx --filter "Category!=E2E"        # SQLite in-memory, no Docker needed (ADR-0010)
+dotnet test tests/ProdTrack.E2E.Tests                       # Playwright/Chromium E2E (first run downloads Chromium user-locally)
+dotnet ef database drop -f -p src/ProdTrack.Infrastructure -s src/ProdTrack.Server   # reset local DB (Development re-migrates + seeds on next run)
 dotnet format ProdTrack.slnx --verify-no-changes
 dotnet tool restore                                         # dotnet-ef (local tool manifest)
 dotnet ef migrations add <Name> -p src/ProdTrack.Infrastructure -s src/ProdTrack.Server -o Persistence/Migrations
@@ -73,5 +75,5 @@ Run build + tests before declaring a story done. Tests do not need Docker or SQL
 
 - Be explicit about assumptions; if the docs are ambiguous, choose the simplest option consistent with them, note it, and propose a doc update.
 - Keep PR-sized changes; one story per branch `feature/PT-xxx-short-name`; commit messages `PT-xxx: <imperative summary>`; PR title `PT-xxx: ...` with `Closes #<issue>` (each story is a GitHub issue whose title starts with its PT key).
-- Never invent facts about DMB Websolutions; this is a practice app with fictitious data.
+- Never present assumptions as facts about a real company; this is a DMB Websolutions practice app with a fictitious plant scenario and data.
 - Workflow changes: keep `docs/11-github-setup.md` (and `docs/08` for ops) in sync. Azure DevOps interview practice: when a story touches CI/CD or planning, mention the related Phase 2 lab in `docs/10-azure-devops-study-guide.md`.

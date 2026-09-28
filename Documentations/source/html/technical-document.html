@@ -1,0 +1,781 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Technical Document</title>
+<style>@page { size: A4; margin: 22mm 18mm 20mm 18mm;
+  @top-left { content: "DMB ProdTrack"; font: 8pt "DejaVu Sans", sans-serif; color: #6b7280; }
+  @top-right { content: "Technical Document"; font: 8pt "DejaVu Sans", sans-serif; color: #6b7280; }
+  @bottom-right { content: "Page " counter(page) " of " counter(pages); font: 8pt "DejaVu Sans", sans-serif; color: #6b7280; }
+  @bottom-left { content: "Version 1.0 - 27 September 2026"; font: 8pt "DejaVu Sans", sans-serif; color: #6b7280; } }
+@page :first { @top-left { content: none; } @top-right { content: none; } @bottom-right { content: none; } @bottom-left { content: none; } }
+html { font: 10pt/1.45 "DejaVu Sans", Arial, sans-serif; color: #1f2937; }
+h1, h2, h3 { color: #1e3a8a; line-height: 1.2; }
+main h1 { page-break-before: always; font-size: 19pt; border-bottom: 2px solid #1e3a8a; padding-bottom: 4pt; margin-top: 0; }
+h2 { font-size: 13.5pt; margin-top: 16pt; page-break-after: avoid; }
+h3 { font-size: 11pt; margin-top: 12pt; page-break-after: avoid; }
+p, li { orphans: 3; widows: 3; }
+a { color: #1d4ed8; text-decoration: none; }
+code { font: 8.6pt "DejaVu Sans Mono", monospace; background: #f3f4f6; padding: 0 2pt; border-radius: 2pt; }
+pre { background: #f3f4f6; border: 1px solid #e5e7eb; padding: 6pt 8pt; font-size: 8.4pt; white-space: pre-wrap; page-break-inside: avoid; }
+pre code { background: none; padding: 0; }
+table { border-collapse: collapse; width: 100%; margin: 6pt 0 10pt; font-size: 8.8pt; page-break-inside: auto; }
+th, td { border: 1px solid #d1d5db; padding: 3pt 5pt; vertical-align: top; text-align: left; }
+th { background: #e0e7ff; color: #1e3a8a; }
+tr { page-break-inside: avoid; }
+figure { margin: 8pt 0 12pt; text-align: center; page-break-inside: avoid; }
+figure img { max-width: 100%; max-height: 215mm; border: 1px solid #d1d5db; }
+figcaption { font-size: 8.5pt; color: #4b5563; margin-top: 3pt; font-style: italic; }
+blockquote { border-left: 3px solid #93c5fd; background: #eff6ff; margin: 8pt 0; padding: 4pt 10pt; }
+.title-page { page: first; height: 240mm; display: flex; flex-direction: column; justify-content: center; page-break-after: always; }
+.brand { font-size: 14pt; letter-spacing: 2pt; text-transform: uppercase; color: #6b7280; }
+.doc-title { display: block; font-size: 30pt; font-weight: bold; color: #1e3a8a; margin: 10pt 0 6pt; }
+.subtitle { font-size: 13pt; color: #374151; margin-bottom: 26pt; }
+.meta { width: 70%; font-size: 10pt; }
+.meta th { width: 38%; }
+.disclaimer { margin-top: 30pt; font-size: 8.5pt; color: #6b7280; }
+.toc-page { page-break-after: always; }
+.toc-title { border-bottom: 2px solid #1e3a8a; font-size: 19pt; }
+ul.toc { list-style: none; padding: 0; }
+ul.toc li { margin: 3pt 0; }
+ul.toc li.toc2 { margin-left: 14pt; font-size: 9.2pt; }
+ul.toc li.toc1 { font-weight: bold; margin-top: 7pt; }
+ul.toc a { color: #1f2937; }
+ul.toc a::after { content: leader(".") target-counter(attr(href), page); font-weight: normal; }
+</style></head><body>
+<section class="title-page">
+  <div class="brand">DMB ProdTrack</div>
+  <h0 class="doc-title">Technical Document</h0>
+  <div class="subtitle">Architecture, data model, API, security, operations and testing</div>
+  <table class="meta">
+    <tr><th>Version</th><td>1.0</td></tr>
+    <tr><th>Date</th><td>27 September 2026</td></tr>
+    <tr><th>Application release</th><td>Sprint 2-3 batch (branch feature/sprint-2-3)</td></tr>
+    <tr><th>Audience</th><td>Developers, reviewers, IT administrators</td></tr>
+    <tr><th>Author</th><td>Deo Bernal</td></tr>
+  </table>
+  <p class="disclaimer">Practice project by DMB Websolutions. The manufacturing scenario, business rules and data are
+  fictitious, plausible assumptions.</p>
+</section>
+<section class="toc-page"><h1 class="toc-title">Contents</h1><ul class="toc"><li class="toc1"><a href="#overview">Overview</a></li><li class="toc1"><a href="#architecture">Architecture</a></li><li class="toc2"><a href="#layers-and-projects">Layers and projects</a></li><li class="toc2"><a href="#request-pipeline">Request pipeline</a></li><li class="toc1"><a href="#technology-stack">Technology stack</a></li><li class="toc1"><a href="#data-model">Data model</a></li><li class="toc2"><a href="#migrations">Migrations</a></li><li class="toc1"><a href="#api-reference-summary">API reference summary</a></li><li class="toc2"><a href="#scan-codes">Scan codes</a></li><li class="toc1"><a href="#security">Security</a></li><li class="toc2"><a href="#authentication">Authentication</a></li><li class="toc2"><a href="#authorization">Authorization</a></li><li class="toc1"><a href="#audit-trail">Audit trail</a></li><li class="toc1"><a href="#concurrency">Concurrency</a></li><li class="toc1"><a href="#real-time-updates-signalr">Real-time updates (SignalR)</a></li><li class="toc1"><a href="#logging-errors-and-health">Logging, errors and health</a></li><li class="toc1"><a href="#traveler-and-qr-codes">Traveler and QR codes</a></li><li class="toc1"><a href="#shop-floor-pwa">Shop-floor PWA</a></li><li class="toc1"><a href="#testing-strategy">Testing strategy</a></li><li class="toc1"><a href="#continuous-integration">Continuous integration</a></li><li class="toc1"><a href="#local-setup-and-configuration">Local setup and configuration</a></li><li class="toc2"><a href="#prerequisites">Prerequisites</a></li><li class="toc2"><a href="#run">Run</a></li><li class="toc2"><a href="#database-commands">Database commands</a></li><li class="toc2"><a href="#configuration-keys">Configuration keys</a></li><li class="toc1"><a href="#deployment-options-future">Deployment options (future)</a></li><li class="toc1"><a href="#architecture-decisions">Architecture decisions</a></li></ul></section>
+<main><h1 id="overview">Overview</h1>
+<p>DMB ProdTrack is a .NET 10 web application with two front ends served by one ASP.NET Core host:</p>
+<ul>
+<li>a <strong>back office</strong> built with Blazor Web App (Interactive Server rendering) for planners, supervisors, QC and admins;</li>
+<li>a <strong>shop-floor PWA</strong> built with Blazor WebAssembly, served under <code>/floor</code>, for station tablets.</li>
+</ul>
+<p>Both use the same REST API (<code>/api/v1</code>), the same cookie-based ASP.NET Core Identity sign-in and the same SignalR hub
+for live updates. Data lives in SQL Server (LocalDB for local development) through EF Core. This document reflects the
+code on branch <code>feature/sprint-2-3</code> (PR #2), 27 September 2026.</p>
+<h1 id="architecture">Architecture</h1>
+<h2 id="layers-and-projects">Layers and projects</h2>
+<p>The solution (<code>ProdTrack.slnx</code>) follows Clean Architecture with a lightweight CQRS style (ADR-0001). Dependencies
+point inwards; architecture tests (NetArchTest) fail the build if a layer references an outer one.</p>
+<table>
+<thead>
+<tr>
+<th>Project</th>
+<th>Layer</th>
+<th>Responsibility</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ProdTrack.Domain</code></td>
+<td>Domain</td>
+<td>Aggregates (WorkOrder, Operation, SalesOrder, Routing, Product, Station, ReasonCode, QcInspection, ...), invariants, state machines, <code>Result</code>/<code>Error</code>, domain events. No framework dependencies.</td>
+</tr>
+<tr>
+<td><code>ProdTrack.Application</code></td>
+<td>Application</td>
+<td>Commands and queries with handlers, <code>IDispatcher</code>, decorators (authorization, validation, concurrency), FluentValidation validators, abstractions (<code>IAppDbContext</code>, <code>INotifier</code>, <code>IFileStorage</code>, <code>IQrCodeRenderer</code>, <code>IPlantClock</code>, <code>ICurrentUser</code>), role/policy definitions.</td>
+</tr>
+<tr>
+<td><code>ProdTrack.Infrastructure</code></td>
+<td>Infrastructure</td>
+<td>EF Core <code>AppDbContext</code> and configurations, migrations, audit trail, number sequences, seeding, Identity stores and user administration, QRCoder renderer, local file storage, SignalR notifier.</td>
+</tr>
+<tr>
+<td><code>ProdTrack.Contracts</code></td>
+<td>Shared</td>
+<td>Request/response DTOs and the hub contract shared by server and clients.</td>
+</tr>
+<tr>
+<td><code>ProdTrack.ApiClient</code></td>
+<td>Shared client</td>
+<td>Typed <code>HttpClient</code> wrapper used by the PWA (antiforgery-aware).</td>
+</tr>
+<tr>
+<td><code>ProdTrack.UI.Shared</code></td>
+<td>Shared UI</td>
+<td>Razor components shared between back office and PWA.</td>
+</tr>
+<tr>
+<td><code>ProdTrack.ShopFloor</code></td>
+<td>Presentation</td>
+<td>Blazor WebAssembly PWA (<code>/floor</code>): station picker, queue, scan box, operation page, SignalR client.</td>
+</tr>
+<tr>
+<td><code>ProdTrack.Server</code></td>
+<td>Presentation / host</td>
+<td>Minimal API endpoints, SignalR hub, Blazor Server pages, Identity UI (sign-in, change password), security setup, Serilog, health checks, hosting of the PWA.</td>
+</tr>
+</tbody>
+</table>
+<figure><img src="../images/diagrams/architecture.png" alt="Architecture: projects, layers and runtime connections"/><figcaption>Architecture: projects, layers and runtime connections</figcaption></figure>
+<h2 id="request-pipeline">Request pipeline</h2>
+<ol>
+<li>Endpoint (Minimal API) or Razor component builds a command/query from the request.</li>
+<li><code>IDispatcher</code> resolves the handler, wrapped by decorators (outermost first):
+   <strong>Authorization</strong> (policy from <code>[RequiresPolicy]</code>) → <strong>Validation</strong> (FluentValidation) →
+   <strong>Concurrency</strong> (maps <code>DbUpdateConcurrencyException</code> to <code>Concurrency.Conflict</code>) → handler.</li>
+<li>The handler loads aggregates through <code>IAppDbContext</code>, calls domain methods that return <code>Result</code>, and saves.</li>
+<li><code>SaveChanges</code> writes audit entries in the same transaction and dispatches domain events after commit
+   (for example to the SignalR notifier).</li>
+<li>Endpoints map <code>Result</code> errors to ProblemDetails: Validation → 400, NotFound → 404, Conflict → 409, BusinessRule → 422,
+   Forbidden → 403, <code>Concurrency.StaleVersion</code> → 412, <code>Concurrency.Conflict</code> → 409.</li>
+</ol>
+<h1 id="technology-stack">Technology stack</h1>
+<table>
+<thead>
+<tr>
+<th>Area</th>
+<th>Technology</th>
+<th>Version</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Runtime / SDK</td>
+<td>.NET, C#</td>
+<td>SDK 10.0.401 (<code>global.json</code>, roll-forward latestFeature)</td>
+</tr>
+<tr>
+<td>Web host</td>
+<td>ASP.NET Core (Minimal APIs, Blazor Web App, SignalR)</td>
+<td>10.0</td>
+</tr>
+<tr>
+<td>Shop floor</td>
+<td>Blazor WebAssembly PWA, SignalR client</td>
+<td>10.0</td>
+</tr>
+<tr>
+<td>Data access</td>
+<td>EF Core (SqlServer provider; Sqlite for tests)</td>
+<td>10.0</td>
+</tr>
+<tr>
+<td>Database</td>
+<td>SQL Server LocalDB <code>MSSQLLocalDB</code> (local); SQL Server / MonsterASP MSSQL (future hosting)</td>
+<td>-</td>
+</tr>
+<tr>
+<td>Identity</td>
+<td>ASP.NET Core Identity (EF stores), cookie auth</td>
+<td>10.0</td>
+</tr>
+<tr>
+<td>Validation</td>
+<td>FluentValidation</td>
+<td>12.1.1</td>
+</tr>
+<tr>
+<td>DI scanning / decorators</td>
+<td>Scrutor</td>
+<td>7.0.0</td>
+</tr>
+<tr>
+<td>QR codes</td>
+<td>QRCoder (MIT) - SVG output</td>
+<td>1.8.0</td>
+</tr>
+<tr>
+<td>Logging</td>
+<td>Serilog.AspNetCore, Serilog.Sinks.File, Serilog.Formatting.Compact</td>
+<td>10.0.0 / 7.0.0 / 3.0.0</td>
+</tr>
+<tr>
+<td>API docs</td>
+<td>Microsoft.AspNetCore.OpenApi + Swashbuckle SwaggerUI (Development)</td>
+<td>10.0 / 10.2.3</td>
+</tr>
+<tr>
+<td>Unit/integration tests</td>
+<td>xUnit, AwesomeAssertions, NSubstitute, Microsoft.AspNetCore.Mvc.Testing, TimeProvider.Testing</td>
+<td>2.9.3 / 9.6.0 / 6.2.0 / 10.0 / 10.10.0</td>
+</tr>
+<tr>
+<td>Architecture tests</td>
+<td>NetArchTest.Rules</td>
+<td>1.3.2</td>
+</tr>
+<tr>
+<td>E2E tests</td>
+<td>Microsoft.Playwright (Chromium)</td>
+<td>1.63.0</td>
+</tr>
+<tr>
+<td>Coverage</td>
+<td>coverlet.collector, ReportGenerator (local tool)</td>
+<td>10.0.1</td>
+</tr>
+<tr>
+<td>CI</td>
+<td>GitHub Actions (ubuntu-latest)</td>
+<td>-</td>
+</tr>
+</tbody>
+</table>
+<p>Package versions are pinned centrally in <code>Directory.Packages.props</code>. Commercially licensed packages (FluentAssertions
+v8+, MediatR v13+, AutoMapper) are deliberately avoided.</p>
+<h1 id="data-model">Data model</h1>
+<p>EF Core maps the domain to SQL Server schemas: <code>md</code> (master data), <code>ord</code> (orders and work orders), <code>mes</code> (execution),
+<code>qc</code> (quality), <code>audit</code> and <code>sec</code> (Identity and data-protection keys). Specifications are stored as JSON columns.
+Aggregates carry a SQL Server <code>rowversion</code> column used for optimistic concurrency.</p>
+<figure><img src="../images/diagrams/erd.png" alt="Entity relationship diagram (main entities)"/><figcaption>Entity relationship diagram (main entities)</figcaption></figure>
+<table>
+<thead>
+<tr>
+<th>Entity</th>
+<th>Schema</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Product</td>
+<td>md</td>
+<td>SKU, type (PipeMarker, ValveTag, SafetySign, Label), <code>RequiresArtworkApproval</code>, default spec (JSON)</td>
+</tr>
+<tr>
+<td>Station</td>
+<td>md</td>
+<td>Code, name, type (Prepress, Printing, Laminating, Engraving, Cutting, Inspection, Packing), active flag</td>
+</tr>
+<tr>
+<td>ReasonCode</td>
+<td>md</td>
+<td>Code, description, category (Scrap, Pause, Downtime, Hold, Skip)</td>
+</tr>
+<tr>
+<td>ColorScheme, SignalWord</td>
+<td>md</td>
+<td>ASME A13.1 and ANSI Z535 reference data</td>
+</tr>
+<tr>
+<td>Routing, RoutingStep</td>
+<td>md</td>
+<td>Versioned per product type; one current version</td>
+</tr>
+<tr>
+<td>SalesOrder, SalesOrderLine</td>
+<td>ord</td>
+<td>Number <code>SO-yyyy-nnnnn</code>, status Open/Closed/Cancelled; line spec snapshot</td>
+</tr>
+<tr>
+<td>WorkOrder</td>
+<td>ord</td>
+<td>Number <code>WO-yyyy-nnnnnn</code>, optional <code>SalesOrderLineId</code>, spec snapshot, status, hold reason, <code>StatusBeforeHold</code>, <code>CancelReason</code></td>
+</tr>
+<tr>
+<td>ArtworkProof</td>
+<td>ord</td>
+<td>Versioned proof files with status Pending/Approved/Rejected/Superseded</td>
+</tr>
+<tr>
+<td>Operation</td>
+<td>mes</td>
+<td>Sequence, station, status, input/good/scrap quantity, standard times, <code>StartedAtUtc</code>, <code>StartedBy</code>, rowversion</td>
+</tr>
+<tr>
+<td>OperationEvent</td>
+<td>mes</td>
+<td>Start/pause/resume/complete events with reason, user, device and idempotency <code>RequestId</code></td>
+</tr>
+<tr>
+<td>ScrapRecord</td>
+<td>mes</td>
+<td>Quantity, reason, note, user, time</td>
+</tr>
+<tr>
+<td>QcChecklistTemplate, QcChecklistItem</td>
+<td>qc</td>
+<td>Per product type; PassFail or Measured items with min/max/unit</td>
+</tr>
+<tr>
+<td>QcInspection, QcResultItem</td>
+<td>qc</td>
+<td>Result Passed/Failed, sample size, inspector, per-item results</td>
+</tr>
+<tr>
+<td>AuditEntry</td>
+<td>audit</td>
+<td>Entity, key, action, changes JSON (old → new), user, correlation id, UTC time</td>
+</tr>
+<tr>
+<td>AppUser (+ roles)</td>
+<td>sec</td>
+<td>Identity user with display name, employee number, badge number, home station, <code>IsActive</code>, <code>MustChangePassword</code></td>
+</tr>
+<tr>
+<td>NumberSequence</td>
+<td>ord</td>
+<td>Per-kind, per-year counters with rowversion</td>
+</tr>
+</tbody>
+</table>
+<h2 id="migrations">Migrations</h2>
+<table>
+<thead>
+<tr>
+<th>Migration</th>
+<th>Content</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>20260927124814_InitialCreate</code></td>
+<td>All schemas and tables of Sprint 0-1 (master data, orders, execution, QC, audit, Identity)</td>
+</tr>
+<tr>
+<td><code>20260927143317_Sprint23Execution</code></td>
+<td><code>WorkOrder.CancelReason</code>, <code>WorkOrder.StatusBeforeHold</code>, <code>Operation.StartedBy</code> and related indexes</td>
+</tr>
+</tbody>
+</table>
+<p><code>dotnet ef database update</code> creates a clean database from these migrations. The deploy workflow (future) applies an
+idempotent script generated by CI instead of migrating at startup.</p>
+<h1 id="api-reference-summary">API reference summary</h1>
+<p>All endpoints are under <code>/api/v1</code>, require an authenticated user (fallback policy) and return ProblemDetails with a
+<code>traceId</code> on errors. Unsafe requests from cookie-authenticated browsers must send the antiforgery token in
+<code>X-XSRF-TOKEN</code> (fetch it from <code>GET /api/v1/antiforgery</code>). Swagger UI is available at <code>/swagger</code> in Development.</p>
+<table>
+<thead>
+<tr>
+<th>Area</th>
+<th>Endpoints</th>
+<th>Policy</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Me</td>
+<td><code>GET /me</code></td>
+<td>ReadAll</td>
+</tr>
+<tr>
+<td>Dashboard</td>
+<td><code>GET /dashboard/wip</code></td>
+<td>ReadAll</td>
+</tr>
+<tr>
+<td>Reference</td>
+<td><code>GET /reference/{list}</code> (color-schemes, signal-words, product-types, station-types, reason-categories)</td>
+<td>ReadAll</td>
+</tr>
+<tr>
+<td>Products</td>
+<td><code>GET /products</code>, <code>GET /products/{id}</code> (ETag), <code>POST /products</code>, <code>PUT /products/{id}</code> (If-Match)</td>
+<td>ReadAll / ManageProductsAndRoutings</td>
+</tr>
+<tr>
+<td>Stations</td>
+<td><code>GET /stations</code>, <code>POST /stations</code>, <code>PUT /stations/{id}</code> (If-Match), <code>DELETE /stations/{id}</code> (deactivate)</td>
+<td>ReadAll / ManageMasterData</td>
+</tr>
+<tr>
+<td>Reason codes</td>
+<td><code>GET /reason-codes</code>, <code>POST /reason-codes</code>, <code>PUT /reason-codes/{id}</code> (If-Match)</td>
+<td>ReadAll / ManageMasterData</td>
+</tr>
+<tr>
+<td>Routings</td>
+<td><code>GET /routings</code>, <code>GET /routings/{id}</code>, <code>POST /routings</code> (new version)</td>
+<td>ReadAll / ManageProductsAndRoutings</td>
+</tr>
+<tr>
+<td>Sales orders</td>
+<td><code>GET /sales-orders</code>, <code>GET /sales-orders/{id}</code> (ETag), <code>POST /sales-orders</code>, <code>PUT /sales-orders/{id}</code> (If-Match), <code>POST /sales-orders/{id}/cancel</code>, <code>POST /sales-orders/{id}/work-orders</code></td>
+<td>ReadAll / PlanWorkOrders</td>
+</tr>
+<tr>
+<td>Work orders</td>
+<td><code>GET /work-orders</code>, <code>GET /work-orders/{id}</code> (ETag), <code>GET /work-orders/by-number/{number}</code>, <code>POST /work-orders</code>, <code>PUT /work-orders/{id}</code> (If-Match), <code>DELETE /work-orders/{id}</code>, <code>POST /work-orders/{id}/release</code></td>
+<td>ReadAll / PlanWorkOrders</td>
+</tr>
+<tr>
+<td>Work order control</td>
+<td><code>POST /work-orders/{id}/hold</code>, <code>/resume</code>, <code>/cancel</code> (all If-Match), <code>GET /work-orders/{id}/traveler</code></td>
+<td>ControlWorkOrders</td>
+</tr>
+<tr>
+<td>Artwork</td>
+<td><code>POST /work-orders/{id}/artwork</code>, <code>GET .../artwork/{version}</code>, <code>POST .../artwork/{version}/approve</code>, <code>.../reject</code></td>
+<td>UploadArtwork / ReadAll / ApproveArtwork</td>
+</tr>
+<tr>
+<td>Floor</td>
+<td><code>GET /stations/{code}/queue</code>, <code>GET /scan/{code}</code></td>
+<td>ReadAll / ExecuteOperations</td>
+</tr>
+<tr>
+<td>Operations</td>
+<td><code>GET /operations/{id}</code>, <code>POST /operations/{id}/start</code>, <code>/pause</code>, <code>/resume</code>, <code>/complete</code>, <code>/scrap</code></td>
+<td>ReadAll / ExecuteOperations</td>
+</tr>
+<tr>
+<td>QC</td>
+<td><code>GET /qc/templates</code>, <code>POST /operations/{id}/inspection</code></td>
+<td>ReadAll / RecordInspections</td>
+</tr>
+<tr>
+<td>Users</td>
+<td><code>GET /users</code>, <code>GET /users/{id}</code> (ETag), <code>POST /users</code>, <code>PUT /users/{id}</code> (If-Match), <code>POST /users/{id}/active</code>, <code>POST /users/{id}/reset-password</code></td>
+<td>ManageUsers</td>
+</tr>
+</tbody>
+</table>
+<p>Other routes: <code>/hubs/production</code> (SignalR), <code>/health</code>, <code>/health/live</code>, <code>/health/ready</code>, <code>/account/login</code>,
+<code>/account/logout</code>, <code>/account/change-password</code>, <code>/floor/</code> (PWA).</p>
+<h2 id="scan-codes">Scan codes</h2>
+<p>The traveler QR codes carry <code>WO:{number}</code> for the work order and <code>OP:{number}:{sequence}</code> for an operation
+(ADR-0007). <code>GET /scan/{code}</code> also accepts a bare work order number (typed by hand) and returns the target operation
+or a 404 ProblemDetails with a readable message.</p>
+<h1 id="security">Security</h1>
+<h2 id="authentication">Authentication</h2>
+<ul>
+<li>ASP.NET Core Identity with EF stores; accounts are created by administrators only (no self-registration, no email).</li>
+<li>Cookie <code>__Host-ProdTrack</code>: HttpOnly, Secure, SameSite=Lax, 12-hour sliding expiration. API calls receive 401/403
+  ProblemDetails instead of redirects.</li>
+<li>Password policy: minimum 12 characters; lockout after 5 failures for 15 minutes; <code>MustChangePassword</code> forces a
+  change after creation or reset. Disabled users are rejected at sign-in and at the next security-stamp validation
+  (30 minutes).</li>
+<li>Bootstrap admin: created on an empty database from <code>Auth:BootstrapAdmin</code> (Development default
+  <code>admin@prodtrack.local</code> / <code>ChangeMe!Dev2026</code>; outside Development it must come from host configuration).</li>
+<li>Optional <code>Auth:Mode=Dev</code> user picker for local development only (refused outside Development).</li>
+</ul>
+<h2 id="authorization">Authorization</h2>
+<p>Roles: Admin, Planner, Supervisor, Operator, QC, Viewer. Policies are defined once in <code>Policies.Definitions</code> and used by
+endpoints, Razor <code>AuthorizeView</code> and the application authorization decorator.</p>
+<table>
+<thead>
+<tr>
+<th>Policy</th>
+<th>Roles</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ReadAll</td>
+<td>all roles</td>
+</tr>
+<tr>
+<td>ManageMasterData, ManageUsers</td>
+<td>Admin</td>
+</tr>
+<tr>
+<td>ManageProductsAndRoutings, PlanWorkOrders, ApproveArtwork</td>
+<td>Admin, Planner</td>
+</tr>
+<tr>
+<td>ControlWorkOrders</td>
+<td>Admin, Planner, Supervisor</td>
+</tr>
+<tr>
+<td>ExecuteOperations</td>
+<td>Admin, Supervisor, Operator, QC</td>
+</tr>
+<tr>
+<td>RecordInspections</td>
+<td>Admin, QC</td>
+</tr>
+<tr>
+<td>UploadArtwork</td>
+<td>Admin, Planner, Operator</td>
+</tr>
+<tr>
+<td>ViewAudit</td>
+<td>Admin, Supervisor, QC</td>
+</tr>
+</tbody>
+</table>
+<p>Antiforgery protection applies to forms and to cookie-authenticated API calls (<code>X-XSRF-TOKEN</code>).</p>
+<h1 id="audit-trail">Audit trail</h1>
+<p><code>AppDbContext.SaveChanges</code> captures added, modified and deleted entities from the change tracker and writes
+<code>AuditEntry</code> rows in the <strong>same transaction</strong> (ADR-0011): entity name, key, action, a JSON document of changed fields
+(old → new), user id, correlation id and UTC timestamp. Secrets and noise (password hashes, security stamps,
+rowversions, normalized names) are excluded. User administration actions are audited too.</p>
+<h1 id="concurrency">Concurrency</h1>
+<ul>
+<li>Every aggregate root has a <code>rowversion</code> column configured as an EF concurrency token (emulated for SQLite in tests).</li>
+<li><code>GET</code> of a single resource returns an <code>ETag</code> (base64 rowversion; the Identity concurrency stamp for users).</li>
+<li><code>PUT</code> and state-changing <code>POST</code> endpoints accept <code>If-Match</code>:</li>
+<li>missing or <code>*</code> → last write wins (backwards compatible);</li>
+<li>stale or malformed → <strong>412 Precondition Failed</strong>, code <code>Concurrency.StaleVersion</code>;</li>
+<li>a concurrent write between the check and the save (EF <code>DbUpdateConcurrencyException</code>) → <strong>409 Conflict</strong>, code
+    <code>Concurrency.Conflict</code>, via the <code>ConcurrencyCommandDecorator</code>.</li>
+<li>Blazor edit pages keep the version they loaded and show "Someone else changed this ... Reload latest" on 409/412.</li>
+<li>Floor commands accept an optional <code>RequestId</code> so retried taps are idempotent.</li>
+</ul>
+<figure><img src="../images/diagrams/concurrency.png" alt="If-Match flow"/><figcaption>If-Match flow</figcaption></figure>
+<h1 id="real-time-updates-signalr">Real-time updates (SignalR)</h1>
+<p>The strongly typed hub <code>ProductionHub</code> at <code>/hubs/production</code> pushes server-to-client messages only (ADR-0006):
+<code>WorkOrderChanged</code> and <code>OperationChanged</code>. Groups: <code>dashboard</code>, <code>station:{code}</code> and <code>workorder:{id}</code>.</p>
+<ul>
+<li><code>SignalRNotifier</code> (Infrastructure) sends events after the database commit.</li>
+<li>Back office: an <code>IRealtimeFeed</code> singleton relays hub events to Blazor Server components; the <code>LiveRefresh</code> component
+  debounces bursts and reloads the dashboard or work order detail. The former 30-second polling was removed.</li>
+<li>Shop floor: <code>LiveUpdates</code> uses the SignalR .NET client in WebAssembly with automatic reconnect and refreshes the
+  station queue and operation page.</li>
+</ul>
+<figure><img src="../images/diagrams/realtime.png" alt="Live update sequence"/><figcaption>Live update sequence</figcaption></figure>
+<h1 id="logging-errors-and-health">Logging, errors and health</h1>
+<ul>
+<li><strong>Serilog</strong> writes compact JSON rolling files to <code>App_Data/logs/prodtrack-.json</code> (and the console in Development),
+  with request logging and a correlation id (<code>X-Correlation-Id</code>) on every request and audit entry.</li>
+<li>A global exception handler returns ProblemDetails with <code>traceId</code> for API calls and a friendly error page for the UI.</li>
+<li>Health endpoints: <code>/health/live</code> (process), <code>/health/ready</code> and <code>/health</code> (database check). Anonymous access.</li>
+</ul>
+<h1 id="traveler-and-qr-codes">Traveler and QR codes</h1>
+<p><code>GET /work-orders/{id}/traveler</code> returns the work order, operations and QR codes rendered by <strong>QRCoder</strong> as SVG
+strings (<code>IQrCodeRenderer</code>). The Blazor page <code>/work-orders/{id}/traveler</code> uses a print layout without navigation and
+inlines the SVGs, so printing or saving as PDF from the browser needs no server-side PDF engine.</p>
+<h1 id="shop-floor-pwa">Shop-floor PWA</h1>
+<ul>
+<li>Blazor WebAssembly app hosted by the server under <code>/floor</code> (same origin, same cookie), installable via a web manifest
+  and service worker.</li>
+<li><code>StationPreference</code> stores the chosen station in <code>localStorage</code>.</li>
+<li><code>ScanBox</code> accepts keyboard-wedge scanners and typed codes, and uses the browser <code>BarcodeDetector</code> API through
+  <code>wwwroot/js/floor.js</code> for camera scanning where available (feedback tones included).</li>
+<li><code>ApiClient</code> adds the antiforgery header to unsafe requests.</li>
+<li>WebAssembly hot reload is disabled for this project (<code>WasmEnableHotReload=false</code>) because its reload module breaks
+  the server-hosted pages.</li>
+</ul>
+<h1 id="testing-strategy">Testing strategy</h1>
+<table>
+<thead>
+<tr>
+<th>Project</th>
+<th>Type</th>
+<th>What it covers</th>
+<th>Tests</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ProdTrack.Domain.Tests</td>
+<td>Unit</td>
+<td>Aggregates, state machines, quantity rules, QC evaluation, scan code parsing</td>
+<td>56</td>
+</tr>
+<tr>
+<td>ProdTrack.Application.Tests</td>
+<td>Unit</td>
+<td>Handlers and decorators with SQLite in-memory and fakes (sales orders, hold/cancel, execution, QC, concurrency)</td>
+<td>56</td>
+</tr>
+<tr>
+<td>ProdTrack.Infrastructure.Tests</td>
+<td>Integration (component)</td>
+<td>Audit trail, number sequences, QR renderer, plant clock, local file storage</td>
+<td>13</td>
+</tr>
+<tr>
+<td>ProdTrack.ArchitectureTests</td>
+<td>Architecture</td>
+<td>Layer dependency rules (NetArchTest)</td>
+<td>6</td>
+</tr>
+<tr>
+<td>ProdTrack.Server.IntegrationTests</td>
+<td>Integration</td>
+<td>Full HTTP pipeline via <code>WebApplicationFactory</code> + SQLite in-memory: every endpoint, role matrix, ETag/If-Match 412/409, ProblemDetails, health</td>
+<td>110</td>
+</tr>
+<tr>
+<td>ProdTrack.E2E.Tests</td>
+<td>End-to-end</td>
+<td>Playwright/Chromium against an in-process Kestrel host: sign-in with forced password change, create and release a work order, run an operation on /floor, scan box</td>
+<td>2 (+1 opt-in screenshot capture)</td>
+</tr>
+<tr>
+<td><strong>Total</strong></td>
+<td></td>
+<td></td>
+<td><strong>243</strong> (+1)</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>Tests need neither SQL Server nor Docker: SQLite in-memory replaces SQL Server (ADR-0010), with rowversion emulation
+  for concurrency tests.</li>
+<li>Tests are tagged with <code>Category</code> (Unit, Integration, E2E) and <code>Story</code> (PT-xxx) traits.</li>
+<li>E2E: the first run installs Chromium user-locally (<code>%LOCALAPPDATA%\ms-playwright</code> on Windows,
+  <code>~/.cache/ms-playwright</code> on Linux). <code>PRODTRACK_E2E_HEADED=1</code> shows the browser; failure screenshots go to
+  <code>%TEMP%/prodtrack-e2e-failures</code>. The docs screenshot capture runs only with <code>PRODTRACK_DOCS_SCREENSHOTS=&lt;dir&gt;</code>.</li>
+<li>Quality gates: <code>dotnet format --verify-no-changes</code>, <code>dotnet build -warnaserror</code> (0 warnings), all tests green.</li>
+</ul>
+<h1 id="continuous-integration">Continuous integration</h1>
+<p><code>.github/workflows/ci.yml</code> runs on pull requests to <code>main</code>, pushes to <code>main</code> and manual dispatch, on GitHub-hosted
+<code>ubuntu-latest</code>. It needs <strong>no secrets</strong>.</p>
+<table>
+<thead>
+<tr>
+<th>Job</th>
+<th>Steps</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>build-test</code></td>
+<td>Restore tools and packages, format check, Release build with <code>-warnaserror</code>, unit tests, integration tests (coverage + trx), coverage summary, vulnerable-package check; on <code>main</code> also publishes the <code>win-x86</code> framework-dependent app and an idempotent migration script as the <code>prodtrack-drop</code> artifact</td>
+</tr>
+<tr>
+<td><code>e2e</code></td>
+<td>Build the E2E project, install Chromium with OS dependencies on the runner, run <code>Category=E2E</code>, upload trx files and failure screenshots on failure</td>
+</tr>
+</tbody>
+</table>
+<p><code>deploy.yml</code> (manual, MonsterASP Web Deploy) and <code>ops.yml</code> (weekly checks) exist from the scaffold but have not been
+run; they require secrets that are intentionally not configured.</p>
+<h1 id="local-setup-and-configuration">Local setup and configuration</h1>
+<h2 id="prerequisites">Prerequisites</h2>
+<ul>
+<li>.NET SDK 10.0.401 or later feature band; SQL Server Express LocalDB (installed with Visual Studio 2026).</li>
+<li>Visual Studio 2026 (or the <code>dotnet</code> CLI). No Docker needed.</li>
+</ul>
+<h2 id="run">Run</h2>
+<pre><code class="language-powershell">dotnet tool restore
+dotnet build ProdTrack.slnx
+dotnet run --project src/ProdTrack.Server --launch-profile https
+# https://localhost:5001  (back office)   https://localhost:5001/floor/  (shop floor)
+</code></pre>
+<p>In Visual Studio 2026 open <code>ProdTrack.slnx</code>, set <strong>ProdTrack.Server</strong> as startup project, choose the <strong>https</strong> profile
+and press F5. In Development the app applies pending migrations and seeds reference and demo data on startup.</p>
+<h2 id="database-commands">Database commands</h2>
+<pre><code class="language-powershell">dotnet ef database update -p src/ProdTrack.Infrastructure -s src/ProdTrack.Server    # create / upgrade
+dotnet ef database drop -f -p src/ProdTrack.Infrastructure -s src/ProdTrack.Server   # reset (then run again)
+dotnet ef migrations add &lt;Name&gt; -p src/ProdTrack.Infrastructure -s src/ProdTrack.Server -o Persistence/Migrations
+</code></pre>
+<h2 id="configuration-keys">Configuration keys</h2>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Default (Development)</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ConnectionStrings:ProdTrack</code></td>
+<td><code>Server=(localdb)\MSSQLLocalDB;Database=ProdTrack;...</code></td>
+<td>SQL Server connection</td>
+</tr>
+<tr>
+<td><code>Database:MigrateOnStartup</code></td>
+<td><code>true</code> (false in base settings)</td>
+<td>Apply EF migrations at startup</td>
+</tr>
+<tr>
+<td><code>Database:SeedDemoData</code></td>
+<td><code>true</code></td>
+<td>Seed demo products</td>
+</tr>
+<tr>
+<td><code>Auth:Mode</code></td>
+<td><code>Identity</code> (<code>Dev</code> = user picker, Development only)</td>
+<td>Sign-in mode</td>
+</tr>
+<tr>
+<td><code>Auth:BootstrapAdmin:Email</code> / <code>Password</code></td>
+<td><code>admin@prodtrack.local</code> / <code>ChangeMe!Dev2026</code></td>
+<td>First administrator on an empty database</td>
+</tr>
+<tr>
+<td><code>Storage:Local:RootPath</code></td>
+<td><code>App_Data/files</code></td>
+<td>Artwork files</td>
+</tr>
+<tr>
+<td><code>LogFile:Enabled</code> / <code>LogFile:Path</code></td>
+<td><code>true</code> / <code>App_Data/logs/prodtrack-.json</code></td>
+<td>Serilog file sink</td>
+</tr>
+<tr>
+<td><code>Plant:TimeZone</code></td>
+<td><code>Asia/Manila</code></td>
+<td>Plant-local dates (late, today KPIs)</td>
+</tr>
+<tr>
+<td><code>App:PublicBaseUrl</code>, <code>App:UseForwardedHeaders</code></td>
+<td>empty / false</td>
+<td>Reverse-proxy hosting</td>
+</tr>
+</tbody>
+</table>
+<p>Secrets for local overrides go into <code>dotnet user-secrets</code> (project <code>ProdTrack.Server</code>), never into the repository.</p>
+<h1 id="deployment-options-future">Deployment options (future)</h1>
+<p>No deployment has been performed. The documented target is:</p>
+<ol>
+<li><strong>MonsterASP.NET free plan</strong> (US$0): one IIS site (planned <code>https://dmb-prodtrack.runasp.net</code>) and a 1 GB MSSQL
+   database. CI publishes a <code>win-x86</code> framework-dependent build; <code>deploy.yml</code> uses Web Deploy (FTP alternative), takes
+   the site offline with <code>app_offline.htm</code>, applies the idempotent migration script and brings it back. Free-plan
+   limits (256 MB RAM, sleep after 30 minutes idle, no email, manual HTTPS renewal) are handled by design:
+   no background jobs, reconnect-aware SignalR clients, no email features.</li>
+<li><strong>Azure DevOps (phase 2)</strong>: mirror or migrate Boards, Repos and Pipelines (YAML equivalent of the GitHub workflows,
+   environments with approvals), as documented in <code>docs/04-azure-devops-setup.md</code>.</li>
+</ol>
+<p>Optional alternatives (Azure App Service + Azure SQL, Google Cloud Run) are described in <code>docs/03</code>.</p>
+<h1 id="architecture-decisions">Architecture decisions</h1>
+<table>
+<thead>
+<tr>
+<th>ADR</th>
+<th>Decision</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0001</td>
+<td>Clean Architecture with CQRS-lite (own dispatcher, no MediatR)</td>
+</tr>
+<tr>
+<td>0002</td>
+<td>Blazor Server back office and WebAssembly PWA in a single host</td>
+</tr>
+<tr>
+<td>0003</td>
+<td>ASP.NET Core Identity with admin-created accounts</td>
+</tr>
+<tr>
+<td>0004</td>
+<td>MonsterASP.NET free hosting</td>
+</tr>
+<tr>
+<td>0005</td>
+<td>SQL Server with EF Core migrations (idempotent scripts in deployment)</td>
+</tr>
+<tr>
+<td>0006</td>
+<td>Minimal APIs for commands, SignalR for push only</td>
+</tr>
+<tr>
+<td>0007</td>
+<td>QR payload format <code>WO:</code> / <code>OP:</code></td>
+</tr>
+<tr>
+<td>0008</td>
+<td>Custom domain deferred</td>
+</tr>
+<tr>
+<td>0009</td>
+<td>GitHub Actions with Web Deploy</td>
+</tr>
+<tr>
+<td>0010</td>
+<td>SQLite in-memory for tests</td>
+</tr>
+<tr>
+<td>0011</td>
+<td>Audit in SaveChanges and database number sequences</td>
+</tr>
+</tbody>
+</table></main></body></html>

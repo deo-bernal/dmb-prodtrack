@@ -30,6 +30,10 @@ public interface IAppDbContext
 
     DbSet<Operation> Operations { get; }
 
+    DbSet<OperationEvent> OperationEvents { get; }
+
+    DbSet<ScrapRecord> ScrapRecords { get; }
+
     DbSet<SalesOrder> SalesOrders { get; }
 
     DbSet<QcChecklistTemplate> QcChecklistTemplates { get; }

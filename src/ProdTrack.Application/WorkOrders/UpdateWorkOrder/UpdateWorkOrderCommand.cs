@@ -10,4 +10,5 @@ public sealed record UpdateWorkOrderCommand(
     DateOnly DueDate,
     int Priority,
     string? CustomerName,
-    string? Legend) : ICommand<Unit>;
+    string? Legend,
+    byte[]? ExpectedVersion = null) : ICommand<Unit>;

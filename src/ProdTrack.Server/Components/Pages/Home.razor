@@ -5,12 +5,15 @@
 @using ProdTrack.Application.Dashboard
 @using ProdTrack.Application.Dashboard.GetDashboardSummary
 @using ProdTrack.Domain.WorkOrders
+@using ProdTrack.Server.Realtime
 @inject UseCaseDispatcher Dispatcher
+@inject IRealtimeFeed Feed
 
 <PageTitle>Dashboard · ProdTrack</PageTitle>
 
 <div class="d-flex align-items-center mb-3">
     <h1 class="me-auto">Dashboard</h1>
+    <span class="badge text-bg-success me-2" data-testid="live-indicator" title="Updates are pushed as work happens">● Live</span>
     <button class="btn btn-outline-secondary btn-sm" @onclick="LoadAsync">Refresh</button>
 </div>
 
@@ -22,7 +25,7 @@
 }
 else
 {
-    <div class="row g-3 mb-4">
+    <div class="row g-3 mb-3">
         @foreach (var status in DisplayStatuses)
         {
             <div class="col-6 col-md-2">
@@ -31,6 +34,20 @@ else
         }
         <div class="col-6 col-md-2">
             <KpiTile Title="Late" Value="@summary.LateCount.ToString(System.Globalization.CultureInfo.InvariantCulture)" TestId="late" />
+        </div>
+    </div>
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-2">
+            <KpiTile Title="Completed today" Value="@summary.CompletedToday.ToString(System.Globalization.CultureInfo.InvariantCulture)" TestId="completed-today" />
+        </div>
+        <div class="col-6 col-md-2">
+            <KpiTile Title="Good units today" Value="@summary.GoodUnitsToday.ToString(System.Globalization.CultureInfo.InvariantCulture)" TestId="good-today" />
+        </div>
+        <div class="col-6 col-md-2">
+            <KpiTile Title="Scrap units today" Value="@summary.ScrapUnitsToday.ToString(System.Globalization.CultureInfo.InvariantCulture)" TestId="scrap-today" />
+        </div>
+        <div class="col-6 col-md-2">
+            <KpiTile Title="Scrap rate today" Value="@ScrapRate" TestId="scrap-rate" />
         </div>
     </div>
 
@@ -52,7 +69,13 @@ else
             }
         </tbody>
     </table>
-    <p class="text-muted small">Refreshes automatically every 30 seconds.</p>
+    <p class="text-muted small" data-testid="live-status">
+        Updates live as work orders and operations change (SignalR).
+        @if (lastUpdate is not null)
+        {
+            <span>Last update @lastUpdate.Value.ToLocalTime().ToString("HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture).</span>
+        }
+    </p>
 }
 
 @code {
@@ -61,12 +84,22 @@ else
 
     private DashboardSummaryModel? summary;
     private Error? error;
-    private Timer? timer;
+    private LiveRefresh? live;
+    private DateTimeOffset? lastUpdate;
+
+    private string ScrapRate
+    {
+        get
+        {
+            var total = summary!.GoodUnitsToday + summary.ScrapUnitsToday;
+            return total == 0 ? "0%" : ((double)summary.ScrapUnitsToday / total).ToString("P1", System.Globalization.CultureInfo.InvariantCulture);
+        }
+    }
 
     protected override async Task OnInitializedAsync()
     {
         await LoadAsync();
-        timer = new Timer(_ => InvokeAsync(LoadAsync), null, TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(30));
+        live = new LiveRefresh(Feed, _ => true, () => InvokeAsync(LoadAsync), TimeSpan.FromMilliseconds(750));
     }
 
     private int Count(WorkOrderStatus status) => summary!.WorkOrdersByStatus.TryGetValue(status, out var count) ? count : 0;
@@ -75,8 +108,9 @@ else
     {
         var result = await Dispatcher.QueryAsync(new GetDashboardSummaryQuery());
         (summary, error) = result.IsSuccess ? (result.Value, null) : (summary, result.Error);
+        lastUpdate = DateTimeOffset.Now;
         StateHasChanged();
     }
 
-    public void Dispose() => timer?.Dispose();
+    public void Dispose() => live?.Dispose();
 }

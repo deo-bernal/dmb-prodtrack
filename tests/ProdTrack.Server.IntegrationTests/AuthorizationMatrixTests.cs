@@ -15,7 +15,7 @@ public sealed class AuthorizationMatrixTests(ProdTrackFactory factory)
         var data = new TheoryData<string, string>();
         foreach (var role in Roles.All)
         {
-            foreach (var path in (string[])["/api/v1/me", "/api/v1/stations", "/api/v1/work-orders", "/api/v1/products", "/api/v1/routings", "/api/v1/dashboard/wip", "/api/v1/reference/color-schemes", "/api/v1/reason-codes"])
+            foreach (var path in (string[])["/api/v1/me", "/api/v1/stations", "/api/v1/work-orders", "/api/v1/products", "/api/v1/routings", "/api/v1/dashboard/wip", "/api/v1/reference/color-schemes", "/api/v1/reason-codes", "/api/v1/sales-orders", "/api/v1/qc/templates", "/api/v1/stations/PREPRESS/queue"])
             {
                 data.Add(role, path);
             }

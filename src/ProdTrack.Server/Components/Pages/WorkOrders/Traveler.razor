@@ -1,0 +1,110 @@
+@page "/work-orders/{Id:int}/traveler"
+@layout PrintLayout
+@attribute [Authorize(Policy = Policies.ControlWorkOrders)]
+@using ProdTrack.Application.WorkOrders.Traveler
+@inject UseCaseDispatcher Dispatcher
+
+<PageTitle>Traveler @(traveler?.WorkOrder.Number) · ProdTrack</PageTitle>
+
+@if (error is not null)
+{
+    <div class="container py-4">
+        <ErrorAlert Error="error" />
+        <a href="work-orders/@Id">Back to work order</a>
+    </div>
+}
+else if (traveler is not null)
+{
+    var wo = traveler.WorkOrder;
+    <div class="traveler" data-testid="traveler">
+        <div class="no-print d-flex gap-2 mb-3">
+            <button class="btn btn-primary" onclick="window.print()">Print</button>
+            <a class="btn btn-outline-secondary" href="work-orders/@wo.Id">Back to work order</a>
+        </div>
+        <div class="traveler-header">
+            <div class="traveler-qr" aria-label="QR code for @traveler.HeaderPayload">@((MarkupString)traveler.HeaderQrSvg)</div>
+            <div class="flex-grow-1">
+                <div class="small text-uppercase text-muted">DMB ProdTrack · Work order traveler</div>
+                <div class="traveler-number">@wo.Number</div>
+                <div class="fs-5">@wo.ProductSku · @wo.ProductName</div>
+                <table class="table table-sm table-bordered mt-2 mb-0">
+                    <tbody>
+                        <tr><th>Customer</th><td>@wo.CustomerName</td><th>Quantity</th><td>@wo.Quantity</td></tr>
+                        <tr><th>Due date</th><td>@wo.DueDate.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture)</td><th>Priority</th><td>@wo.Priority</td></tr>
+                        <tr><th>Sales order</th><td>@(wo.SalesOrderNumber ?? "-")</td><th>Routing</th><td>@(wo.RoutingVersion is null ? "-" : $"v{wo.RoutingVersion}")</td></tr>
+                        @if (!string.IsNullOrEmpty(wo.Legend))
+                        {
+                            <tr><th>Legend</th><td colspan="3" class="fw-bold">@wo.Legend</td></tr>
+                        }
+                        <tr><th>Spec</th><td colspan="3">@SpecText(wo.Spec)</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <h2 class="h5 mt-3">Operations</h2>
+        <table class="table table-bordered traveler-ops">
+            <thead><tr><th style="width:90px">Scan</th><th>#</th><th>Station</th><th>Setup / std</th><th>Operator</th><th>Good</th><th>Scrap</th><th>Date</th></tr></thead>
+            <tbody>
+                @foreach (var op in traveler.Operations)
+                {
+                    <tr>
+                        <td class="traveler-op-qr" aria-label="QR code for @op.Payload">@((MarkupString)op.QrSvg)</td>
+                        <td>@op.Sequence</td>
+                        <td><strong>@op.StationCode</strong><br /><span class="small">@op.StationName</span></td>
+                        <td class="small">@op.SetupMinutes min + @op.StdMinutesPerUnit min/unit</td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+        <p class="small text-muted">Scan the header code to open the work order, or an operation code at its station in the ProdTrack shop-floor app (/floor). Printed @traveler.PrintedAtPlantTime.ToString("yyyy-MM-dd HH:mm", System.Globalization.CultureInfo.InvariantCulture) (plant time).</p>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    private TravelerModel? traveler;
+    private Error? error;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        var result = await Dispatcher.QueryAsync(new GetTravelerQuery(Id));
+        traveler = result.IsSuccess ? result.Value : null;
+        error = result.Error;
+    }
+
+    private static string SpecText(ProdTrack.Domain.Products.ProductSpec s)
+    {
+        var parts = new List<string>();
+        void Add(string label, object? value)
+        {
+            if (value is not null && !(value is string text && string.IsNullOrWhiteSpace(text)))
+            {
+                parts.Add($"{label}: {Convert.ToString(value, System.Globalization.CultureInfo.InvariantCulture)}");
+            }
+        }
+
+        Add("Material", s.Material);
+        Add("W mm", s.WidthMm);
+        Add("H mm", s.HeightMm);
+        Add("Dia mm", s.DiameterMm);
+        Add("Thk mm", s.ThicknessMm);
+        Add("Standard", s.Standard);
+        Add("Colour", s.ColorSchemeCode);
+        Add("Pipe OD", s.PipeOdRange);
+        Add("Letter mm", s.LetterHeightMm);
+        Add("Shape", s.TagShape);
+        Add("Hole mm", s.HoleSizeMm);
+        Add("Signal", s.SignalWord);
+        Add("Adhesive", s.Adhesive);
+        Add("Finish", s.Finish);
+        Add("Mounting", s.Mounting);
+        return parts.Count == 0 ? "-" : string.Join(" · ", parts);
+    }
+}

@@ -25,7 +25,10 @@ internal static class ApiEndpoints
         api.MapReferenceEndpoints();
         api.MapProductEndpoints();
         api.MapRoutingEndpoints();
+        api.MapSalesOrderEndpoints();
         api.MapWorkOrderEndpoints();
+        api.MapOperationEndpoints();
+        api.MapUserEndpoints();
         api.MapDashboardEndpoints();
 
         if (app.Environment.IsEnvironment("Testing"))

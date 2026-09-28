@@ -3,10 +3,14 @@
   <PropertyGroup>
     <StaticWebAssetBasePath>floor</StaticWebAssetBasePath>
     <ServiceWorkerAssetsManifest>service-worker-assets.js</ServiceWorkerAssetsManifest>
+    <!-- The WASM hot-reload agent (Debug only) registers a lib.module.js that the Server's Blazor pages would also try
+         to load as a library initializer; outside Development it is not served and breaks interactivity. -->
+    <WasmEnableHotReload>false</WasmEnableHotReload>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\ProdTrack.ApiClient\ProdTrack.ApiClient.csproj" />

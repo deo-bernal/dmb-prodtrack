@@ -30,7 +30,7 @@
 **Consequence:** on a private Free repo, the requested "required reviewer approval" and "branch protection with required checks" **cannot be enforced**. This plan therefore uses:
 
 1. **Default (private, US$0):** deployments run **only when Deo starts the `deploy` workflow manually** on `main` (the human gate), the workflow refuses anything that is not a successful `ci` run, and merge discipline is documented (PR + green `build-test` + `e2e`, squash merge). Deployments are still recorded on the `production` environment.
-2. **Upgrade options (decision for Deo, open question in `00`):** make the repo **public** (all protections + unlimited standard-runner minutes, but the code and the DMB-inspired name become public; secrets stay safe in Actions secrets), or use **GitHub Pro** (US$4/month, or free with the GitHub Student Developer Pack if eligible) for branch protection/rulesets on private repos. Required reviewers on a *private* repo need GitHub Enterprise; on a public repo they are free. With protections available, follow section 7.2 and set `AUTO_DEPLOY=true`.
+2. **Upgrade options (decision for Deo, open question in `00`):** make the repo **public** (all protections + unlimited standard-runner minutes, but the code and the project name become public; secrets stay safe in Actions secrets), or use **GitHub Pro** (US$4/month, or free with the GitHub Student Developer Pack if eligible) for branch protection/rulesets on private repos. Required reviewers on a *private* repo need GitHub Enterprise; on a public repo they are free. With protections available, follow section 7.2 and set `AUTO_DEPLOY=true`.
 
 ## 3. Repository setup (PT-001)
 

@@ -1,0 +1,8 @@
+stateDiagram-v2
+  [*] --> Pending: work order released
+  Pending --> Ready: previous step completed (first step starts Ready)
+  Ready --> InProgress: start
+  InProgress --> Paused: pause (reason)
+  Paused --> InProgress: resume
+  InProgress --> Completed: complete (good qty) / QC pass
+  Completed --> [*]

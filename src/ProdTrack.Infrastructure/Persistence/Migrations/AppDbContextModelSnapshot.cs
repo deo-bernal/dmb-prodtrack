@@ -921,6 +921,10 @@ namespace ProdTrack.Infrastructure.Persistence.Migrations
                     b.Property<DateTimeOffset?>("StartedAtUtc")
                         .HasColumnType("datetimeoffset");
 
+                    b.Property<string>("StartedBy")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
                     b.Property<int>("StationId")
                         .HasColumnType("int");
 
@@ -1048,6 +1052,10 @@ namespace ProdTrack.Infrastructure.Persistence.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("CancelReason")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
                     b.Property<DateTimeOffset?>("CompletedAtUtc")
                         .HasColumnType("datetimeoffset");
 
@@ -1111,6 +1119,10 @@ namespace ProdTrack.Infrastructure.Persistence.Migrations
 
                     b.Property<string>("Status")
                         .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("StatusBeforeHold")
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
 

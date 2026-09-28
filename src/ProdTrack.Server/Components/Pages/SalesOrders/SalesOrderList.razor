@@ -1,0 +1,78 @@
+@page "/sales-orders"
+@attribute [Authorize(Policy = Policies.ReadAll)]
+@rendermode InteractiveServer
+@using ProdTrack.Application.SalesOrders
+@using ProdTrack.Domain.SalesOrders
+@inject UseCaseDispatcher Dispatcher
+
+<PageTitle>Sales orders · ProdTrack</PageTitle>
+
+<div class="d-flex align-items-center mb-3">
+    <h1 class="me-auto">Sales orders</h1>
+    <AuthorizeView Policy="@Policies.PlanWorkOrders">
+        <a class="btn btn-primary" href="sales-orders/new" data-testid="new-sales-order">New sales order</a>
+    </AuthorizeView>
+</div>
+
+<ErrorAlert Error="error" />
+
+<div class="row g-2 mb-3">
+    <div class="col-md-3">
+        <select class="form-select" @bind="statusFilter" @bind:after="LoadAsync" aria-label="Status filter">
+            <option value="">All statuses</option>
+            @foreach (var s in Enum.GetValues<SalesOrderStatus>())
+            {
+                <option value="@s">@s</option>
+            }
+        </select>
+    </div>
+    <div class="col-md-5">
+        <input class="form-control" placeholder="Search number, customer or PO" @bind="search" @bind:after="LoadAsync" aria-label="Search" />
+    </div>
+</div>
+
+@if (results is null)
+{
+    <p><em>Loading...</em></p>
+}
+else if (results.Items.Count == 0)
+{
+    <p class="text-muted">No sales orders found.</p>
+}
+else
+{
+    <table class="table table-sm table-hover" data-testid="sales-orders-table">
+        <thead><tr><th>Number</th><th>Customer</th><th>PO</th><th>Due</th><th>Status</th><th class="text-end">Lines</th><th class="text-end">Work orders</th></tr></thead>
+        <tbody>
+            @foreach (var so in results.Items)
+            {
+                <tr>
+                    <td><a href="sales-orders/@so.Id">@so.Number</a></td>
+                    <td>@so.CustomerName</td>
+                    <td>@so.PoNumber</td>
+                    <td>@so.DueDate.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture)</td>
+                    <td><StatusBadge Status="@so.Status.ToString()" /></td>
+                    <td class="text-end">@so.LineCount</td>
+                    <td class="text-end">@so.WorkOrderCount</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    <p class="text-muted small">@results.TotalCount sales order(s).</p>
+}
+
+@code {
+    private PagedResult<SalesOrderSummaryModel>? results;
+    private Error? error;
+    private string statusFilter = string.Empty;
+    private string? search;
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        SalesOrderStatus? status = Enum.TryParse<SalesOrderStatus>(statusFilter, out var s) ? s : null;
+        var result = await Dispatcher.QueryAsync(new SearchSalesOrdersQuery(status, search, 1, 100));
+        (results, error) = result.IsSuccess ? (result.Value, null) : (results, result.Error);
+    }
+}

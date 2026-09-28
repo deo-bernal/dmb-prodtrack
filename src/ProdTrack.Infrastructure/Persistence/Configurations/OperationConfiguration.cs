@@ -15,6 +15,7 @@ internal sealed class OperationConfiguration : IEntityTypeConfiguration<Operatio
         builder.Property(o => o.SetupMinutes).HasPrecision(9, 2);
         builder.Property(o => o.StdMinutesPerUnit).HasPrecision(9, 3);
         builder.Property(o => o.RowVersion).IsRowVersion();
+        builder.Property(o => o.StartedBy).HasMaxLength(256);
         builder.HasIndex(o => new { o.StationId, o.Status }).IncludeProperties(o => new { o.WorkOrderId, o.Sequence });
         builder.HasIndex(o => new { o.WorkOrderId, o.Sequence });
         builder.HasOne<Station>().WithMany().HasForeignKey(o => o.StationId).OnDelete(DeleteBehavior.Restrict);

@@ -15,6 +15,11 @@ internal sealed class UpdateProductHandler(IAppDbContext db) : ICommandHandler<U
             return ProductErrors.NotFound(command.Id);
         }
 
+        if (!ConcurrencyErrors.Matches(product.RowVersion, command.ExpectedVersion))
+        {
+            return ConcurrencyErrors.StaleVersion;
+        }
+
         var referenceError = await ProductReferenceCheck.CheckAsync(db, command.Spec, cancellationToken);
         if (referenceError is not null)
         {

@@ -4,9 +4,11 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using ProdTrack.Application.Abstractions;
+using ProdTrack.Application.Users;
 using ProdTrack.Infrastructure.Identity;
 using ProdTrack.Infrastructure.Persistence;
 using ProdTrack.Infrastructure.Persistence.Seeding;
+using ProdTrack.Infrastructure.Qr;
 using ProdTrack.Infrastructure.Secrets;
 using ProdTrack.Infrastructure.Storage;
 using ProdTrack.Infrastructure.Time;
@@ -43,6 +45,7 @@ public static class DependencyInjection
         services.AddScoped<DomainEventDispatcher>();
         services.AddScoped<INumberSequenceGenerator, NumberSequenceGenerator>();
         services.AddScoped<DatabaseInitializer>();
+        services.AddSingleton<IQrCodeRenderer, QrCodeRenderer>();
 
         services.AddSingleton(TimeProvider.System);
         services.AddOptions<PlantOptions>().Bind(configuration.GetSection(PlantOptions.SectionName));
@@ -73,6 +76,10 @@ public static class DependencyInjection
             .AddClaimsPrincipalFactory<AppUserClaimsPrincipalFactory>()
             .AddDefaultTokenProviders();
     }
+
+    /// <summary>User administration (PT-012); requires the Identity stores.</summary>
+    public static IServiceCollection AddProdTrackUserAdministration(this IServiceCollection services) =>
+        services.AddScoped<IUserAdministration, UserAdministration>();
 
     /// <summary>Local (default) host adapters: disk file storage and configuration secrets (docs/02 section 10).</summary>
     public static IServiceCollection AddProdTrackLocalProviders(this IServiceCollection services, IConfiguration configuration, string contentRootPath)

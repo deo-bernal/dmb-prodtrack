@@ -1,0 +1,40 @@
+flowchart TB
+  subgraph Clients
+    B[Back-office browser<br/>Blazor Interactive Server]
+    T[Shop-floor tablet<br/>/floor Blazor WASM PWA]
+  end
+  subgraph Server["ProdTrack.Server (ASP.NET Core host)"]
+    UI[Razor components<br/>pages, layouts]
+    API[Minimal API endpoints<br/>/api/v1, ETag / If-Match]
+    HUB[SignalR hub<br/>/hubs/production]
+    SEC[Identity cookie auth<br/>role policies, antiforgery]
+  end
+  subgraph App["ProdTrack.Application"]
+    DISP[Dispatcher + decorators<br/>authorization, validation, concurrency]
+    H[Command / query handlers]
+  end
+  DOM["ProdTrack.Domain<br/>aggregates, rules, events"]
+  subgraph Infra["ProdTrack.Infrastructure"]
+    EF[EF Core AppDbContext<br/>audit trail, rowversion]
+    ID[ASP.NET Core Identity<br/>user administration]
+    QR[QRCoder SVG renderer]
+    FS[Local file storage<br/>App_Data/files]
+    RT[SignalR notifier]
+  end
+  DB[(SQL Server / LocalDB<br/>schemas md, ord, mes, qc, audit, sec)]
+  C[ProdTrack.Contracts<br/>DTOs shared by server + clients]
+  AC[ProdTrack.ApiClient + UI.Shared]
+  B --> UI
+  T -->|HTTPS JSON + cookie| API
+  T -.->|WebSocket| HUB
+  B -.->|circuit| HUB
+  UI --> DISP
+  API --> DISP
+  DISP --> H --> DOM
+  H --> EF --> DB
+  ID --> DB
+  H --> QR
+  H --> FS
+  H --> RT --> HUB
+  T --- AC --- C
+  API --- C

@@ -1,7 +1,7 @@
 # 01 - Business Requirements Document (BRD)
 
 > **Status:** Draft v0.3 (2026-09-26) - practice project.
-> **Disclaimer:** This BRD describes a *plausible* plant that manufactures safety identification products (pipe markers, valve tags, safety signs, labels). It does not describe DMB Websolutions's actual processes, systems or data. Standards references (ASME A13.1, ANSI Z535) are summarised at a high level only and must be verified against the current published editions before any real use.
+> **Disclaimer:** This BRD describes a *plausible* plant that manufactures safety identification products (pipe markers, valve tags, safety signs, labels). It does not describe any real company's actual processes, systems or data. Standards references (ASME A13.1, ANSI Z535) are summarised at a high level only and must be verified against the current published editions before any real use.
 
 ---
 
@@ -348,7 +348,7 @@ All KPIs can be filtered by station, date range (plant local time) and product t
 - Must use the Microsoft .NET stack; delivery tooling is GitHub (repo, Projects, Actions) for now, with Azure DevOps as a Phase 2 practice goal (PT-073); hosting on the free MonsterASP.NET plan; Azure and Google Cloud only as optional alternatives.
 - Zero budget and no credit card.
 - Free-plan terms: learning/testing use only, one site, one database, EU servers, no custom domain.
-- No real DMB data; all seed data is fictitious (customers like "Acme Refinery", "Blue Ocean Offshore").
+- No real customer data; all seed data is fictitious (customers like "Acme Refinery", "Blue Ocean Offshore").
 
 ## 12. Glossary
 

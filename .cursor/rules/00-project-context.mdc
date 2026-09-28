@@ -5,7 +5,7 @@ alwaysApply: true
 
 # DMB ProdTrack - project context
 
-- Practice app: production work orders + shop-floor tracking for a plant making pipe markers, valve tags, safety signs and labels. Not affiliated with DMB Websolutions; never invent facts about DMB. All data is fictitious.
+- Practice app: production work orders + shop-floor tracking for a plant making pipe markers, valve tags, safety signs and labels. Built by DMB Websolutions; the plant scenario is fictitious - never present assumptions as facts about a real company. All data is fictitious.
 - Source of truth: `docs/` (plan 00, BRD 01, design 02, stack/hosting 03, Azure DevOps Phase 2 setup 04, backlog 05, testing 06, user guide 07, deployment/ops 08, standards 09, Azure DevOps study guide 10, **GitHub setup 11**). Read `AGENTS.md` first.
 - Stack: .NET 10 LTS, ASP.NET Core Minimal APIs + SignalR, Blazor Web App (Interactive Server) for back office, Blazor WebAssembly PWA for tablets (served by the Server under `/floor`), EF Core + SQL Server, ASP.NET Core Identity with roles (Admin, Planner, Supervisor, Operator, QC, Viewer), optional Google sign-in; Entra ID only as a Phase 2 option.
 - Hosting: **MonsterASP.NET free plan** (IIS, `https://dmb-prodtrack.runasp.net`, one 1 GB MSSQL DB, EU). Environments: Local and Prod only. Free-plan limits shape the design: 256 MB RAM, sleeps after 30 min idle (reconnect/cold-start UX), no email, no scheduled tasks, no backups, manual Let's Encrypt renewal every 90 days. Azure/GCP are optional alternatives only (`deployTarget: monsterasp|azure|gcp`, default `monsterasp`; `Cloud:Provider` default `Local`).

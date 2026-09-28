@@ -126,3 +126,9 @@ html, body {
     min-height: 72px;
     font-size: 1.25rem;
 }
+
+/* Shop-floor touch targets and scanning (docs/09) */
+.action-button { min-height: 4rem; font-size: 1.4rem; }
+.queue-item { border-left: 6px solid #1b6ec2; }
+.scan-video { width: 100%; max-width: 480px; margin-top: .5rem; border: 2px solid #1b6ec2; border-radius: .5rem; }
+.legend-box { font-size: 1.6rem; font-weight: 700; border: 2px dashed #555; padding: .5rem 1rem; display: inline-block; }

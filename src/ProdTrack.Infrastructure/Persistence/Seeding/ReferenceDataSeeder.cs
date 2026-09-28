@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using ProdTrack.Domain.Quality;
 using ProdTrack.Domain.ReasonCodes;
 using ProdTrack.Domain.Reference;
 using ProdTrack.Domain.Routings;
@@ -48,6 +49,16 @@ internal static class ReferenceDataSeeder
                     .Select((code, index) => new RoutingStepDefinition((index + 1) * 10, stations[code], SetupMinutes: 10, StdMinutesPerUnit: 0.5m, AllowOverlap: false))
                     .ToList();
                 db.Routings.Add(Routing.Create(type, 1, name, steps, timeProvider.GetUtcNow()).Value);
+            }
+
+            await db.SaveChangesAsync(cancellationToken);
+        }
+
+        if (!await db.QcChecklistTemplates.AnyAsync(cancellationToken))
+        {
+            foreach (var (type, name, items) in QcTemplateData.Templates)
+            {
+                db.QcChecklistTemplates.Add(QcChecklistTemplate.Create(type, name, items).Value);
             }
 
             await db.SaveChangesAsync(cancellationToken);

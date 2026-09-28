@@ -1,0 +1,345 @@
+@page "/operations/{Id:int}"
+@implements IDisposable
+@inject ProdTrackApiClient Api
+@inject LiveUpdates Live
+@inject StationPreference Preference
+
+<PageTitle>@(op is null ? "Operation" : $"{op.WorkOrderNumber} · {op.StationCode}") · Shop floor</PageTitle>
+
+@if (op is null)
+{
+    @if (error is not null)
+    {
+        <div class="alert alert-warning fs-5" role="alert" data-testid="floor-error">@error.Title</div>
+    }
+    else
+    {
+        <p>Loading...</p>
+    }
+}
+else
+{
+    <div class="d-flex align-items-center gap-2 mb-2">
+        <h1 class="me-auto mb-0" data-testid="op-title">@op.WorkOrderNumber · step @op.Sequence</h1>
+        <a class="btn btn-outline-secondary" href="station/@op.StationCode" data-testid="back-to-queue">@op.StationCode queue</a>
+    </div>
+
+    @if (error is not null)
+    {
+        <div class="alert alert-danger fs-5" role="alert" aria-live="assertive" data-testid="op-error">@error.Title @error.Detail</div>
+    }
+    @if (notice is not null)
+    {
+        <div class="alert alert-success fs-5" role="status" aria-live="polite" data-testid="op-notice">@notice</div>
+    }
+    @if (myStation is not null && myStation != op.StationCode)
+    {
+        <div class="alert alert-warning fs-5" role="alert" data-testid="wrong-station">This step belongs to @op.StationCode, but this device is set to @myStation.</div>
+    }
+
+    <div class="row g-3">
+        <div class="col-lg-7">
+            <div class="card">
+                <div class="card-body fs-5">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <StatusBadge Status="@op.Status" />
+                        @if (op.WorkOrderStatus == "OnHold")
+                        {
+                            <span class="badge text-bg-warning" data-testid="op-hold">Work order on hold: @op.HoldReason</span>
+                        }
+                        <span class="ms-auto">@op.StationCode · @op.StationName</span>
+                    </div>
+                    <div class="fs-4 fw-bold">@op.ProductSku · @op.ProductName</div>
+                    @if (!string.IsNullOrEmpty(op.Legend))
+                    {
+                        <div class="legend-box my-2" data-testid="op-legend">@op.Legend</div>
+                    }
+                    <div class="row text-center my-3">
+                        <div class="col"><div class="small text-muted">Input</div><div class="fs-2" data-testid="op-input">@op.InputQuantity</div></div>
+                        <div class="col"><div class="small text-muted">Good</div><div class="fs-2" data-testid="op-good">@op.GoodQuantity</div></div>
+                        <div class="col"><div class="small text-muted">Scrap</div><div class="fs-2" data-testid="op-scrap">@op.ScrapQuantity</div></div>
+                        <div class="col"><div class="small text-muted">WO qty</div><div class="fs-2">@op.WorkOrderQuantity</div></div>
+                    </div>
+                    <div class="small text-muted">Due @op.DueDate.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture)
+                        @if (op.StartedAtUtc is not null)
+                        {
+                            <span> · started @op.StartedAtUtc.Value.ToLocalTime().ToString("HH:mm", System.Globalization.CultureInfo.InvariantCulture) by @op.StartedBy</span>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            @if (op.Scrap.Count > 0)
+            {
+                <h2 class="h5 mt-3">Scrap logged</h2>
+                <ul class="list-group" data-testid="scrap-list">
+                    @foreach (var s in op.Scrap)
+                    {
+                        <li class="list-group-item">@s.Quantity × @s.ReasonCode (@s.ReasonDescription) @s.Note</li>
+                    }
+                </ul>
+            }
+            @if (op.LatestInspection is not null)
+            {
+                <div class="alert @(op.LatestInspection.Result == "Passed" ? "alert-success" : "alert-danger") mt-3" data-testid="latest-inspection">
+                    Last inspection: <strong>@op.LatestInspection.Result</strong> (sample @op.LatestInspection.SampleSize) @op.LatestInspection.Notes
+                </div>
+            }
+        </div>
+
+        <div class="col-lg-5">
+            @if (op.Status is "Ready" or "Pending")
+            {
+                @if (op.CanStart)
+                {
+                    <button class="btn btn-success btn-lg w-100 action-button" disabled="@busy" @onclick="StartAsync" data-testid="op-start">Start</button>
+                }
+                else
+                {
+                    <div class="alert alert-secondary fs-5" data-testid="op-blocked">@op.StartBlockedReason</div>
+                }
+            }
+            else if (op.Status == "InProgress")
+            {
+                @if (!op.IsInspection)
+                {
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <label class="form-label fs-5" for="good-qty">Good quantity</label>
+                            <input id="good-qty" type="number" min="0" class="form-control form-control-lg mb-2" @bind="goodQuantity" data-testid="op-good-input" />
+                            <button class="btn btn-primary btn-lg w-100 action-button" disabled="@busy" @onclick="CompleteAsync" data-testid="op-complete">Complete step</button>
+                        </div>
+                    </div>
+                }
+                else if (op.Checklist is not null)
+                {
+                    <div class="card mb-3" data-testid="qc-form">
+                        <div class="card-header fs-5">QC checklist · @op.Checklist.Name</div>
+                        <div class="card-body">
+                            @foreach (var item in op.Checklist.Items)
+                            {
+                                var answer = Answer(item.Id);
+                                <div class="mb-2">
+                                    <div>@item.Sequence. @item.Description</div>
+                                    @if (item.Kind == "Measured")
+                                    {
+                                        <div class="input-group">
+                                            <input type="number" step="any" class="form-control" @bind="answer.Measured" aria-label="@item.Description" data-testid="qc-measure-@item.Id" />
+                                            <span class="input-group-text">@item.MinValue – @item.MaxValue @item.Unit</span>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="btn-group" role="group" aria-label="@item.Description">
+                                            <button type="button" class="btn @(answer.Passed == true ? "btn-success" : "btn-outline-success")" @onclick="() => answer.Passed = true" data-testid="qc-pass-@item.Id">Pass</button>
+                                            <button type="button" class="btn @(answer.Passed == false ? "btn-danger" : "btn-outline-danger")" @onclick="() => answer.Passed = false" data-testid="qc-fail-@item.Id">Fail</button>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                            <div class="row g-2 mt-2">
+                                <div class="col-4">
+                                    <label class="form-label" for="qc-sample">Sample size</label>
+                                    <input id="qc-sample" type="number" min="1" class="form-control" @bind="sampleSize" />
+                                </div>
+                                <div class="col-8">
+                                    <label class="form-label" for="qc-notes">Notes</label>
+                                    <input id="qc-notes" class="form-control" @bind="qcNotes" />
+                                </div>
+                            </div>
+                            <button class="btn btn-primary btn-lg w-100 mt-3 action-button" disabled="@busy" @onclick="RecordInspectionAsync" data-testid="qc-submit">Record inspection</button>
+                            <div class="form-text">Pass completes this step; fail puts the work order on hold (QC-FAIL).</div>
+                        </div>
+                    </div>
+                }
+
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <label class="form-label fs-5" for="pause-reason">Pause</label>
+                        <div class="input-group input-group-lg">
+                            <select id="pause-reason" class="form-select" @bind="pauseReasonId" data-testid="op-pause-reason">
+                                <option value="0">(reason)</option>
+                                @foreach (var r in pauseReasons)
+                                {
+                                    <option value="@r.Id">@r.Code · @r.Description</option>
+                                }
+                            </select>
+                            <button class="btn btn-warning" disabled="@busy" @onclick="PauseAsync" data-testid="op-pause">Pause</button>
+                        </div>
+                    </div>
+                </div>
+            }
+            else if (op.Status == "Paused")
+            {
+                <button class="btn btn-success btn-lg w-100 action-button" disabled="@busy" @onclick="ResumeAsync" data-testid="op-resume">Resume</button>
+            }
+            else
+            {
+                <div class="alert alert-secondary fs-5" data-testid="op-done">This step is @op.Status.ToLowerInvariant().</div>
+            }
+
+            @if (op.Status is "InProgress" or "Paused")
+            {
+                <div class="card mt-3">
+                    <div class="card-body">
+                        <label class="form-label fs-5">Log scrap</label>
+                        <div class="row g-2">
+                            <div class="col-4"><input type="number" min="1" class="form-control form-control-lg" placeholder="Qty" @bind="scrapQuantity" aria-label="Scrap quantity" data-testid="scrap-qty" /></div>
+                            <div class="col-8">
+                                <select class="form-select form-select-lg" @bind="scrapReasonId" aria-label="Scrap reason" data-testid="scrap-reason">
+                                    <option value="0">(reason)</option>
+                                    @foreach (var r in scrapReasons)
+                                    {
+                                        <option value="@r.Id">@r.Code · @r.Description</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="col-12"><input class="form-control" placeholder="Note (optional)" @bind="scrapNote" aria-label="Scrap note" /></div>
+                        </div>
+                        <button class="btn btn-outline-danger btn-lg w-100 mt-2" disabled="@busy" @onclick="LogScrapAsync" data-testid="scrap-submit">Log scrap</button>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    private OperationDetailDto? op;
+    private ApiError? error;
+    private string? notice;
+    private string? myStation;
+    private bool busy;
+    private int goodQuantity;
+    private int pauseReasonId;
+    private int scrapReasonId;
+    private int? scrapQuantity;
+    private string? scrapNote;
+    private int sampleSize = 1;
+    private string? qcNotes;
+    private List<ReasonCodeDto> pauseReasons = [];
+    private List<ReasonCodeDto> scrapReasons = [];
+    private readonly Dictionary<int, QcAnswer> answers = [];
+
+    protected override async Task OnParametersSetAsync()
+    {
+        myStation = await Preference.GetAsync();
+        await LoadAsync();
+        pauseReasons = (await Api.GetReasonCodesAsync("Pause")).Value ?? [];
+        scrapReasons = (await Api.GetReasonCodesAsync("Scrap")).Value ?? [];
+        if (op is not null)
+        {
+            Live.Changed -= OnChangedAsync;
+            Live.Changed += OnChangedAsync;
+            await Live.WatchWorkOrderAsync(op.WorkOrderId);
+        }
+    }
+
+    private async Task OnChangedAsync()
+    {
+        if (!busy)
+        {
+            await LoadAsync();
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task LoadAsync()
+    {
+        var result = await Api.GetOperationAsync(Id);
+        if (result.IsSuccess)
+        {
+            var previousStatus = op?.Status;
+            op = result.Value!;
+            if (previousStatus != op.Status || goodQuantity == 0)
+            {
+                goodQuantity = Math.Max(0, op.InputQuantity - op.ScrapQuantity);
+            }
+        }
+        else
+        {
+            error = result.Error;
+        }
+    }
+
+    private QcAnswer Answer(int itemId)
+    {
+        if (!answers.TryGetValue(itemId, out var answer))
+        {
+            answer = new QcAnswer();
+            answers[itemId] = answer;
+        }
+
+        return answer;
+    }
+
+    private async Task RunAsync(Func<Task<ApiError?>> action, string success)
+    {
+        busy = true;
+        error = null;
+        notice = null;
+        try
+        {
+            var failure = await action();
+            error = failure;
+            if (failure is null)
+            {
+                notice = success;
+            }
+
+            await LoadAsync();
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+
+    private Task StartAsync() => RunAsync(
+        async () => (await Api.StartOperationAsync(Id, new StartOperationRequest(myStation ?? op!.StationCode, Guid.NewGuid()))).Error,
+        "Started.");
+
+    private Task PauseAsync() => RunAsync(
+        async () => (await Api.PauseOperationAsync(Id, new PauseOperationRequest(pauseReasonId, Guid.NewGuid()))).Error,
+        "Paused.");
+
+    private Task ResumeAsync() => RunAsync(
+        async () => (await Api.ResumeOperationAsync(Id, new ResumeOperationRequest(Guid.NewGuid()))).Error,
+        "Resumed.");
+
+    private Task CompleteAsync() => RunAsync(
+        async () => (await Api.CompleteOperationAsync(Id, new CompleteOperationRequest(goodQuantity, Guid.NewGuid()))).Error,
+        "Step completed. The next step is now ready.");
+
+    private async Task LogScrapAsync()
+    {
+        await RunAsync(
+            async () => (await Api.LogScrapAsync(Id, new LogScrapRequest(scrapQuantity ?? 0, scrapReasonId, scrapNote))).Error,
+            "Scrap logged.");
+        if (error is null)
+        {
+            (scrapQuantity, scrapNote) = (null, null);
+        }
+    }
+
+    private Task RecordInspectionAsync() => RunAsync(
+        async () =>
+        {
+            var items = op!.Checklist!.Items.Select(i => new QcItemResultRequest(i.Id, Answer(i.Id).Passed, Answer(i.Id).Measured)).ToList();
+            var result = await Api.RecordInspectionAsync(Id, new RecordInspectionRequest(sampleSize, items, qcNotes));
+            return result.Error;
+        },
+        "Inspection recorded.");
+
+    public void Dispose() => Live.Changed -= OnChangedAsync;
+
+    private sealed class QcAnswer
+    {
+        public bool? Passed { get; set; }
+
+        public decimal? Measured { get; set; }
+    }
+}

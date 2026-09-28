@@ -1,0 +1,168 @@
+@implements IAsyncDisposable
+@inject ProdTrackApiClient Api
+@inject IJSRuntime JS
+@inject NavigationManager Navigation
+
+@* Scan input (PT-028): hardware scanners type into the focused box and send Enter; camera scanning uses
+   BarcodeDetector where the browser supports it; typing the code by hand always works. *@
+<form class="scan-box" @onsubmit="SubmitAsync" @onsubmit:preventDefault="true" data-testid="scan-form">
+    <div class="input-group input-group-lg">
+        <input @ref="input" class="form-control" placeholder="Scan or type WO / operation code" @bind="code" @bind:event="oninput"
+               autocomplete="off" autocapitalize="characters" aria-label="Scan code" data-testid="scan-input" />
+        <button class="btn btn-primary" type="submit" data-testid="scan-submit">Open</button>
+        @if (cameraSupported)
+        {
+            <button class="btn btn-outline-secondary" type="button" @onclick="ToggleCameraAsync" data-testid="scan-camera">@(cameraOn ? "Stop camera" : "Camera")</button>
+        }
+    </div>
+</form>
+<video @ref="video" class="scan-video @(cameraOn ? string.Empty : "d-none")" playsinline muted></video>
+@if (message is not null)
+{
+    <div class="alert @(messageIsError ? "alert-danger" : "alert-info") mt-2 fs-5" role="alert" aria-live="assertive" data-testid="scan-message">@message</div>
+}
+
+@code {
+    /// <summary>Station the device is bound to; a scanned work order opens its step at this station.</summary>
+    [Parameter]
+    public string? StationCode { get; set; }
+
+    private ElementReference input;
+    private ElementReference video;
+    private string? code;
+    private string? message;
+    private bool messageIsError;
+    private bool cameraSupported;
+    private bool cameraOn;
+    private DotNetObjectReference<ScanBox>? selfRef;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            cameraSupported = await JS.InvokeAsync<bool>("prodtrackFloor.cameraSupported");
+            await JS.InvokeVoidAsync("prodtrackFloor.focus", input);
+            if (cameraSupported)
+            {
+                StateHasChanged();
+            }
+        }
+    }
+
+    private async Task ToggleCameraAsync()
+    {
+        if (cameraOn)
+        {
+            cameraOn = false;
+            await JS.InvokeVoidAsync("prodtrackFloor.stopCamera", video);
+            return;
+        }
+
+        selfRef ??= DotNetObjectReference.Create(this);
+        try
+        {
+            cameraOn = true;
+            await JS.InvokeVoidAsync("prodtrackFloor.startCamera", video, selfRef);
+        }
+        catch (JSException)
+        {
+            cameraOn = false;
+            await ShowAsync("Camera not available. Type or scan the code instead.", error: true);
+        }
+    }
+
+    [JSInvokable]
+    public async Task OnCameraScanned(string value)
+    {
+        cameraOn = false;
+        code = value;
+        await ResolveAsync();
+        StateHasChanged();
+    }
+
+    private Task SubmitAsync() => ResolveAsync();
+
+    private async Task ResolveAsync()
+    {
+        var value = code?.Trim();
+        if (string.IsNullOrEmpty(value))
+        {
+            return;
+        }
+
+        var result = await Api.ResolveScanAsync(value);
+        if (!result.IsSuccess)
+        {
+            await ShowAsync(result.Error!.Title, error: true);
+            return;
+        }
+
+        var scan = result.Value!;
+        switch (scan.Kind)
+        {
+            case "Operation":
+                await AcceptAsync();
+                Navigation.NavigateTo($"operations/{scan.OperationId}");
+                break;
+            case "Station":
+                await AcceptAsync();
+                Navigation.NavigateTo($"station/{scan.StationCode}");
+                break;
+            default:
+                await OpenWorkOrderAsync(scan);
+                break;
+        }
+    }
+
+    private async Task OpenWorkOrderAsync(ProdTrack.Contracts.Operations.ScanResolutionDto scan)
+    {
+        if (StationCode is not null)
+        {
+            var queue = await Api.GetStationQueueAsync(StationCode);
+            var item = queue.Value?.Items.FirstOrDefault(i => i.WorkOrderId == scan.WorkOrderId);
+            if (item is not null)
+            {
+                await AcceptAsync();
+                Navigation.NavigateTo($"operations/{item.OperationId}");
+                return;
+            }
+
+            await ShowAsync($"{scan.WorkOrderNumber} has no step waiting at {StationCode}. Check the traveler for the right station.", error: true);
+            return;
+        }
+
+        await ShowAsync($"{scan.WorkOrderNumber} found. Select a station first, or scan an operation code from the traveler.", error: true);
+    }
+
+    private async Task AcceptAsync()
+    {
+        code = null;
+        message = null;
+        await JS.InvokeVoidAsync("prodtrackFloor.tone", true);
+    }
+
+    private async Task ShowAsync(string text, bool error)
+    {
+        message = text;
+        messageIsError = error;
+        code = null;
+        await JS.InvokeVoidAsync("prodtrackFloor.tone", !error);
+        await JS.InvokeVoidAsync("prodtrackFloor.focus", input);
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (cameraOn)
+        {
+            try
+            {
+                await JS.InvokeVoidAsync("prodtrackFloor.stopCamera", video);
+            }
+            catch (JSDisconnectedException)
+            {
+            }
+        }
+
+        selfRef?.Dispose();
+    }
+}

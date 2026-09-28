@@ -28,10 +28,17 @@ internal static class WorkOrderDetailLoader
         var stationIds = workOrder.Operations.Select(o => o.StationId).Distinct().ToList();
         var stations = await db.Stations.AsNoTracking()
             .Where(s => stationIds.Contains(s.Id))
-            .ToDictionaryAsync(s => s.Id, s => s.Code, cancellationToken);
+            .ToDictionaryAsync(s => s.Id, s => new { s.Code, s.Name }, cancellationToken);
         int? routingVersion = workOrder.RoutingId is null
             ? null
             : await db.Routings.AsNoTracking().Where(r => r.Id == workOrder.RoutingId).Select(r => (int?)r.Version).FirstOrDefaultAsync(cancellationToken);
+
+        var salesOrder = workOrder.SalesOrderLineId is null
+            ? null
+            : await db.SalesOrders.AsNoTracking()
+                .Where(s => s.Lines.Any(l => l.Id == workOrder.SalesOrderLineId))
+                .Select(s => new { s.Id, s.Number })
+                .FirstOrDefaultAsync(cancellationToken);
 
         return new WorkOrderDetailModel(
             workOrder.Id,
@@ -55,8 +62,25 @@ internal static class WorkOrderDetailLoader
             workOrder.CreatedAtUtc,
             workOrder.ReleasedAtUtc,
             [.. workOrder.Operations.OrderBy(o => o.Sequence).Select(o => new OperationModel(
-                o.Id, o.Sequence, o.StationId, stations.GetValueOrDefault(o.StationId, "?"), o.Status, o.InputQuantity, o.GoodQuantity, o.ScrapQuantity))],
+                o.Id,
+                o.Sequence,
+                o.StationId,
+                stations.GetValueOrDefault(o.StationId)?.Code ?? "?",
+                o.Status,
+                o.InputQuantity,
+                o.GoodQuantity,
+                o.ScrapQuantity,
+                stations.GetValueOrDefault(o.StationId)?.Name,
+                o.StartedAtUtc,
+                o.CompletedAtUtc,
+                o.StartedBy))],
             [.. workOrder.ArtworkProofs.OrderByDescending(p => p.Version).Select(p => new ArtworkProofModel(
-                p.Version, p.OriginalFileName, p.ContentType, p.Status, p.UploadedBy, p.UploadedAtUtc, p.DecidedBy, p.DecidedAtUtc, p.DecisionNote))]);
+                p.Version, p.OriginalFileName, p.ContentType, p.Status, p.UploadedBy, p.UploadedAtUtc, p.DecidedBy, p.DecidedAtUtc, p.DecisionNote))],
+            workOrder.HoldReason,
+            workOrder.CancelReason,
+            salesOrder?.Id,
+            salesOrder?.Number,
+            workOrder.CompletedAtUtc,
+            workOrder.RowVersion);
     }
 }

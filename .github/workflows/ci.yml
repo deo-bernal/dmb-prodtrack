@@ -1,8 +1,8 @@
 # ci.yml - DMB ProdTrack continuous integration (GitHub-hosted ubuntu-latest).
 # Runs on every PR to main and on pushes to main. On main it also publishes the deployable
 # artifact "prodtrack-drop" (win-x86 framework-dependent publish + idempotent migrations.sql)
-# that deploy.yml picks up. Needs no repository secrets. The Playwright E2E job (PT-029) is added
-# together with tests/ProdTrack.E2E.Tests in Sprint 3.
+# that deploy.yml picks up. Needs no repository secrets. The "e2e" job runs the Playwright browser
+# tests (PT-029) against an in-process Kestrel host with SQLite in-memory - also no secrets.
 name: ci
 
 on:
@@ -28,6 +28,40 @@ env:
   SOLUTION: ProdTrack.slnx
 
 jobs:
+  e2e:
+    name: e2e               # Playwright (Chromium) end-to-end tests, PT-029
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+          cache: true
+          cache-dependency-path: '**/Directory.Packages.props'
+
+      - name: Build E2E tests
+        run: dotnet build tests/ProdTrack.E2E.Tests -c "$BUILD_CONFIGURATION"
+
+      - name: Install Chromium and its OS dependencies (runner only)
+        run: pwsh tests/ProdTrack.E2E.Tests/bin/$BUILD_CONFIGURATION/net10.0/playwright.ps1 install --with-deps chromium
+
+      - name: E2E tests
+        run: >
+          dotnet test tests/ProdTrack.E2E.Tests -c "$BUILD_CONFIGURATION" --no-build
+          --filter "Category=E2E" --logger trx --results-directory "${{ runner.temp }}/e2e"
+
+      - name: Upload E2E results and failure screenshots
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-results
+          path: |
+            ${{ runner.temp }}/e2e/**/*.trx
+            /tmp/prodtrack-e2e-failures/*.png
+          retention-days: 5
+
   build:
     name: build-test        # use this job name as the required status check
     runs-on: ubuntu-latest

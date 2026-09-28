@@ -1,0 +1,42 @@
+@page "/qc/templates"
+@attribute [Authorize(Policy = Policies.ReadAll)]
+@rendermode InteractiveServer
+@using ProdTrack.Application.Quality
+@inject UseCaseDispatcher Dispatcher
+
+<PageTitle>QC checklists · ProdTrack</PageTitle>
+<h1>QC checklists</h1>
+<p class="text-muted">Inspection checklists used at Inspection stations (QC-01). A measured item fails automatically when the value is outside its tolerance; any failed item fails the inspection and puts the work order on hold (reason QC-FAIL).</p>
+
+<ErrorAlert Error="error" />
+@foreach (var t in templates)
+{
+    <div class="card mb-3">
+        <div class="card-header"><strong>@t.ProductType</strong> · @t.Name @(t.IsActive ? string.Empty : "(inactive)")</div>
+        <table class="table table-sm mb-0">
+            <thead><tr><th>#</th><th>Check</th><th>Kind</th><th>Tolerance</th></tr></thead>
+            <tbody>
+                @foreach (var i in t.Items)
+                {
+                    <tr>
+                        <td>@i.Sequence</td>
+                        <td>@i.Description</td>
+                        <td>@i.Kind</td>
+                        <td>@(i.MinValue is null && i.MaxValue is null ? "-" : $"{i.MinValue} – {i.MaxValue} {i.Unit}")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@code {
+    private IReadOnlyList<QcTemplateModel> templates = [];
+    private Error? error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var result = await Dispatcher.QueryAsync(new GetQcTemplatesQuery());
+        (templates, error) = result.IsSuccess ? (result.Value, null) : (templates, result.Error);
+    }
+}

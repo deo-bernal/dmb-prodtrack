@@ -38,7 +38,13 @@ public sealed record WorkOrderDetailModel(
     DateTimeOffset CreatedAtUtc,
     DateTimeOffset? ReleasedAtUtc,
     IReadOnlyList<OperationModel> Operations,
-    IReadOnlyList<ArtworkProofModel> ArtworkProofs);
+    IReadOnlyList<ArtworkProofModel> ArtworkProofs,
+    string? HoldReason = null,
+    string? CancelReason = null,
+    int? SalesOrderId = null,
+    string? SalesOrderNumber = null,
+    DateTimeOffset? CompletedAtUtc = null,
+    byte[]? Version = null);
 
 public sealed record OperationModel(
     int Id,
@@ -48,7 +54,11 @@ public sealed record OperationModel(
     OperationStatus Status,
     int InputQuantity,
     int GoodQuantity,
-    int ScrapQuantity);
+    int ScrapQuantity,
+    string? StationName = null,
+    DateTimeOffset? StartedAtUtc = null,
+    DateTimeOffset? CompletedAtUtc = null,
+    string? StartedBy = null);
 
 public sealed record ArtworkProofModel(
     int Version,

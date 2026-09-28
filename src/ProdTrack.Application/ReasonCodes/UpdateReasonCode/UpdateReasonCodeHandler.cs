@@ -15,6 +15,11 @@ internal sealed class UpdateReasonCodeHandler(IAppDbContext db) : ICommandHandle
             return ReasonCodeErrors.NotFound(command.Id);
         }
 
+        if (!ConcurrencyErrors.Matches(reason.RowVersion, command.ExpectedVersion))
+        {
+            return ConcurrencyErrors.StaleVersion;
+        }
+
         var result = reason.Update(command.Description, command.IsActive);
         if (result.IsFailure)
         {

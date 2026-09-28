@@ -11,6 +11,15 @@ public static class ApiRoutes
     public const string Reference = Base + "/reference";
     public const string Products = Base + "/products";
     public const string Routings = Base + "/routings";
+    public const string SalesOrders = Base + "/sales-orders";
     public const string WorkOrders = Base + "/work-orders";
+    public const string Operations = Base + "/operations";
+    public const string Scan = Base + "/scan";
+    public const string Qc = Base + "/qc";
+    public const string Users = Base + "/users";
     public const string Dashboard = Base + "/dashboard";
+
+    public static string StationQueue(string stationCode) => $"{Stations}/{Uri.EscapeDataString(stationCode)}/queue";
+
+    public static string Operation(int id) => $"{Operations}/{id}";
 }

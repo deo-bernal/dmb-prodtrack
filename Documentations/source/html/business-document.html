@@ -1,0 +1,689 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Business Document</title>
+<style>@page { size: A4; margin: 22mm 18mm 20mm 18mm;
+  @top-left { content: "DMB ProdTrack"; font: 8pt "DejaVu Sans", sans-serif; color: #6b7280; }
+  @top-right { content: "Business Document"; font: 8pt "DejaVu Sans", sans-serif; color: #6b7280; }
+  @bottom-right { content: "Page " counter(page) " of " counter(pages); font: 8pt "DejaVu Sans", sans-serif; color: #6b7280; }
+  @bottom-left { content: "Version 1.0 - 27 September 2026"; font: 8pt "DejaVu Sans", sans-serif; color: #6b7280; } }
+@page :first { @top-left { content: none; } @top-right { content: none; } @bottom-right { content: none; } @bottom-left { content: none; } }
+html { font: 10pt/1.45 "DejaVu Sans", Arial, sans-serif; color: #1f2937; }
+h1, h2, h3 { color: #1e3a8a; line-height: 1.2; }
+main h1 { page-break-before: always; font-size: 19pt; border-bottom: 2px solid #1e3a8a; padding-bottom: 4pt; margin-top: 0; }
+h2 { font-size: 13.5pt; margin-top: 16pt; page-break-after: avoid; }
+h3 { font-size: 11pt; margin-top: 12pt; page-break-after: avoid; }
+p, li { orphans: 3; widows: 3; }
+a { color: #1d4ed8; text-decoration: none; }
+code { font: 8.6pt "DejaVu Sans Mono", monospace; background: #f3f4f6; padding: 0 2pt; border-radius: 2pt; }
+pre { background: #f3f4f6; border: 1px solid #e5e7eb; padding: 6pt 8pt; font-size: 8.4pt; white-space: pre-wrap; page-break-inside: avoid; }
+pre code { background: none; padding: 0; }
+table { border-collapse: collapse; width: 100%; margin: 6pt 0 10pt; font-size: 8.8pt; page-break-inside: auto; }
+th, td { border: 1px solid #d1d5db; padding: 3pt 5pt; vertical-align: top; text-align: left; }
+th { background: #e0e7ff; color: #1e3a8a; }
+tr { page-break-inside: avoid; }
+figure { margin: 8pt 0 12pt; text-align: center; page-break-inside: avoid; }
+figure img { max-width: 100%; max-height: 215mm; border: 1px solid #d1d5db; }
+figcaption { font-size: 8.5pt; color: #4b5563; margin-top: 3pt; font-style: italic; }
+blockquote { border-left: 3px solid #93c5fd; background: #eff6ff; margin: 8pt 0; padding: 4pt 10pt; }
+.title-page { page: first; height: 240mm; display: flex; flex-direction: column; justify-content: center; page-break-after: always; }
+.brand { font-size: 14pt; letter-spacing: 2pt; text-transform: uppercase; color: #6b7280; }
+.doc-title { display: block; font-size: 30pt; font-weight: bold; color: #1e3a8a; margin: 10pt 0 6pt; }
+.subtitle { font-size: 13pt; color: #374151; margin-bottom: 26pt; }
+.meta { width: 70%; font-size: 10pt; }
+.meta th { width: 38%; }
+.disclaimer { margin-top: 30pt; font-size: 8.5pt; color: #6b7280; }
+.toc-page { page-break-after: always; }
+.toc-title { border-bottom: 2px solid #1e3a8a; font-size: 19pt; }
+ul.toc { list-style: none; padding: 0; }
+ul.toc li { margin: 3pt 0; }
+ul.toc li.toc2 { margin-left: 14pt; font-size: 9.2pt; }
+ul.toc li.toc1 { font-weight: bold; margin-top: 7pt; }
+ul.toc a { color: #1f2937; }
+ul.toc a::after { content: leader(".") target-counter(attr(href), page); font-weight: normal; }
+</style></head><body>
+<section class="title-page">
+  <div class="brand">DMB ProdTrack</div>
+  <h0 class="doc-title">Business Document</h0>
+  <div class="subtitle">Purpose, production context, processes, rules, KPIs and scope</div>
+  <table class="meta">
+    <tr><th>Version</th><td>1.0</td></tr>
+    <tr><th>Date</th><td>27 September 2026</td></tr>
+    <tr><th>Application release</th><td>Sprint 2-3 batch (branch feature/sprint-2-3)</td></tr>
+    <tr><th>Audience</th><td>Plant management, planners, supervisors, quality, IT and project stakeholders</td></tr>
+    <tr><th>Author</th><td>Deo Bernal</td></tr>
+  </table>
+  <p class="disclaimer">Practice project by DMB Websolutions. The manufacturing scenario, business rules and data are
+  fictitious, plausible assumptions.</p>
+</section>
+<section class="toc-page"><h1 class="toc-title">Contents</h1><ul class="toc"><li class="toc1"><a href="#executive-summary">Executive summary</a></li><li class="toc1"><a href="#purpose-and-problem-statement">Purpose and problem statement</a></li><li class="toc2"><a href="#business-objectives">Business objectives</a></li><li class="toc1"><a href="#production-context">Production context</a></li><li class="toc2"><a href="#product-families">Product families</a></li><li class="toc2"><a href="#stations-and-routings">Stations and routings</a></li><li class="toc1"><a href="#stakeholders-and-roles">Stakeholders and roles</a></li><li class="toc2"><a href="#role-permissions">Role permissions</a></li><li class="toc1"><a href="#business-processes">Business processes</a></li><li class="toc2"><a href="#end-to-end-flow">End-to-end flow</a></li><li class="toc2"><a href="#work-order-lifecycle">Work order lifecycle</a></li><li class="toc2"><a href="#operation-lifecycle">Operation lifecycle</a></li><li class="toc1"><a href="#business-rules">Business rules</a></li><li class="toc1"><a href="#key-performance-indicators">Key performance indicators</a></li><li class="toc1"><a href="#scope">Scope</a></li><li class="toc2"><a href="#in-scope-delivered">In scope (delivered)</a></li><li class="toc2"><a href="#out-of-scope-for-this-release-future">Out of scope for this release / future</a></li><li class="toc1"><a href="#assumptions-and-constraints">Assumptions and constraints</a></li><li class="toc1"><a href="#glossary">Glossary</a></li></ul></section>
+<main><h1 id="executive-summary">Executive summary</h1>
+<p>DMB ProdTrack is a production work-order and shop-floor tracking system for a plant that makes safety identification
+products - pipe markers, valve tags, safety signs and labels. It replaces paper travelers and spreadsheets with a single
+system that follows each job from the customer's sales order through artwork approval, release, station-by-station
+execution, quality inspection and completion, and shows the live state of the floor on a dashboard.</p>
+<p>This document describes the application <strong>as built</strong> after the Sprint 2-3 batch (27 September 2026). It is a
+practice project by DMB Websolutions: the plant scenario, business rules and data are fictitious, plausible
+assumptions for a marking-products plant.</p>
+<p>What the current release delivers:</p>
+<ul>
+<li>Sales orders with lines, and one-click generation of work orders from the lines.</li>
+<li>Work orders with specification snapshot, artwork proof approval, release to the floor, hold/resume/cancel with
+  reason codes, and a printable traveler with QR codes.</li>
+<li>A shop-floor web app for tablets: station queue, QR scanning (camera, hardware scanner or typed), start, pause,
+  complete with good quantity, scrap with reason codes, and QC checklists.</li>
+<li>A live supervisor dashboard (work orders by status, late jobs, today's good/scrap units and scrap rate, WIP by
+  station) that updates as operators work.</li>
+<li>User administration with six roles, a full audit trail, and protection against two people overwriting each other's
+  changes.</li>
+</ul>
+<h1 id="purpose-and-problem-statement">Purpose and problem statement</h1>
+<p>A marking-products plant handles many small, highly customised orders. One customer order can contain hundreds of
+pipe-marker legends, engraved valve tags with unique numbers and safety signs in several sizes and materials, often for
+oil and gas, power and industrial projects with strict deadlines and documentation requirements.</p>
+<p>In the assumed current situation:</p>
+<ul>
+<li>Orders are re-keyed from sales documents into spreadsheets and work instructions travel on paper.</li>
+<li>Supervisors walk the floor to find out where a job is; work in progress per station is unknown.</li>
+<li>Late jobs are discovered late, and customer service cannot quickly answer "where is my order?".</li>
+<li>Scrap is recorded on paper, if at all, so its main causes are not measured.</li>
+<li>QC results are kept on paper forms, which makes traceability slow.</li>
+</ul>
+<p><strong>Purpose of ProdTrack:</strong> provide real-time, reliable and auditable information about production status and quality,
+with minimal typing on the shop floor.</p>
+<h2 id="business-objectives">Business objectives</h2>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Objective</th>
+<th>How the current release supports it</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>BO1</td>
+<td>Real-time visibility of every work order</td>
+<td>Operation events are pushed to the dashboard and work order pages within seconds (SignalR)</td>
+</tr>
+<tr>
+<td>BO2</td>
+<td>Improve on-time delivery</td>
+<td>Late work orders are counted on the dashboard and highlighted in lists; at-risk forecasting is future work</td>
+</tr>
+<tr>
+<td>BO3</td>
+<td>Reduce scrap through measurement</td>
+<td>Every scrap entry needs a quantity and a reason code; scrap units and scrap rate are shown for today</td>
+</tr>
+<tr>
+<td>BO4</td>
+<td>Paperless QC traceability</td>
+<td>QC checklists are recorded per operation with inspector, time, measured values and result</td>
+</tr>
+<tr>
+<td>BO5</td>
+<td>Reduce data entry</td>
+<td>Operators scan the traveler QR codes instead of typing numbers</td>
+</tr>
+</tbody>
+</table>
+<h1 id="production-context">Production context</h1>
+<h2 id="product-families">Product families</h2>
+<table>
+<thead>
+<tr>
+<th>Family</th>
+<th>Examples</th>
+<th>Typical specification</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Pipe markers</td>
+<td>Printed vinyl markers for flammable, water, compressed air lines</td>
+<td>Material, pipe OD range, ASME A13.1 colour scheme, legend text, letter height</td>
+</tr>
+<tr>
+<td>Valve tags</td>
+<td>Engraved brass or aluminium tags</td>
+<td>Material, shape, diameter, thickness, hole size, engraved text</td>
+</tr>
+<tr>
+<td>Safety signs</td>
+<td>Aluminium or polymer signs</td>
+<td>Size, material, ANSI Z535 signal word (DANGER, WARNING, CAUTION, NOTICE), mounting</td>
+</tr>
+<tr>
+<td>Labels</td>
+<td>Polyester labels</td>
+<td>Size, adhesive, finish</td>
+</tr>
+</tbody>
+</table>
+<p>Reference data seeded with the application includes the ASME A13.1 colour schemes (for example Flammable = black on
+yellow, Fire quenching = white on red) and the ANSI Z535 signal words with their colours.</p>
+<h2 id="stations-and-routings">Stations and routings</h2>
+<table>
+<thead>
+<tr>
+<th>Station</th>
+<th>Type</th>
+<th>Used by</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>PREPRESS</td>
+<td>Prepress / artwork</td>
+<td>All product types</td>
+</tr>
+<tr>
+<td>PRINT-01</td>
+<td>Digital printing</td>
+<td>Pipe markers, signs, labels</td>
+</tr>
+<tr>
+<td>LAM-01</td>
+<td>Laminating</td>
+<td>Pipe markers, signs</td>
+</tr>
+<tr>
+<td>ENGRAVE-01</td>
+<td>Engraving</td>
+<td>Valve tags</td>
+</tr>
+<tr>
+<td>DIECUT-01</td>
+<td>Die-cutting / cutting</td>
+<td>Pipe markers, signs, labels</td>
+</tr>
+<tr>
+<td>QC-01</td>
+<td>Quality control (inspection)</td>
+<td>All product types</td>
+</tr>
+<tr>
+<td>PACK-01</td>
+<td>Packing and shipping</td>
+<td>All product types</td>
+</tr>
+</tbody>
+</table>
+<p>A <strong>routing</strong> is the ordered list of stations for a product type, with setup time and standard minutes per unit. For
+example, a printed pipe marker goes PREPRESS, PRINT-01, LAM-01, DIECUT-01, QC-01, PACK-01; an engraved valve tag goes
+PREPRESS, ENGRAVE-01, QC-01, PACK-01. Routings are versioned: planners edit them by creating a new version.</p>
+<h1 id="stakeholders-and-roles">Stakeholders and roles</h1>
+<table>
+<thead>
+<tr>
+<th>Stakeholder</th>
+<th>Interest</th>
+<th>Role in ProdTrack</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Plant manager</td>
+<td>Throughput, on-time delivery, cost</td>
+<td>Viewer or Supervisor (dashboard)</td>
+</tr>
+<tr>
+<td>Production planner</td>
+<td>Order entry, artwork, releasing work</td>
+<td>Planner</td>
+</tr>
+<tr>
+<td>Shift supervisor</td>
+<td>WIP, bottlenecks, holds</td>
+<td>Supervisor</td>
+</tr>
+<tr>
+<td>Machine operator</td>
+<td>Clear queue, easy recording</td>
+<td>Operator (shop-floor app)</td>
+</tr>
+<tr>
+<td>QC inspector</td>
+<td>Consistent inspections, stopping bad product</td>
+<td>QC</td>
+</tr>
+<tr>
+<td>Customer service / sales</td>
+<td>Order status for customers</td>
+<td>Viewer</td>
+</tr>
+<tr>
+<td>IT administrator</td>
+<td>Users, security, availability</td>
+<td>Admin</td>
+</tr>
+<tr>
+<td>Customers (indirect)</td>
+<td>On-time, correct, compliant product</td>
+<td>-</td>
+</tr>
+</tbody>
+</table>
+<h2 id="role-permissions">Role permissions</h2>
+<table>
+<thead>
+<tr>
+<th>Capability</th>
+<th style="text-align: center;">Admin</th>
+<th style="text-align: center;">Planner</th>
+<th style="text-align: center;">Supervisor</th>
+<th style="text-align: center;">Operator</th>
+<th style="text-align: center;">QC</th>
+<th style="text-align: center;">Viewer</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>View dashboard, orders, products, routings</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Yes</td>
+</tr>
+<tr>
+<td>Sales orders and work orders (create, edit, release)</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">-</td>
+<td style="text-align: center;">-</td>
+<td style="text-align: center;">-</td>
+<td style="text-align: center;">-</td>
+</tr>
+<tr>
+<td>Products and routings (edit)</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">-</td>
+<td style="text-align: center;">-</td>
+<td style="text-align: center;">-</td>
+<td style="text-align: center;">-</td>
+</tr>
+<tr>
+<td>Hold / resume / cancel work orders, print traveler</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">-</td>
+<td style="text-align: center;">-</td>
+<td style="text-align: center;">-</td>
+</tr>
+<tr>
+<td>Upload artwork proof</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">-</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">-</td>
+<td style="text-align: center;">-</td>
+</tr>
+<tr>
+<td>Approve / reject artwork</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">-</td>
+<td style="text-align: center;">-</td>
+<td style="text-align: center;">-</td>
+<td style="text-align: center;">-</td>
+</tr>
+<tr>
+<td>Run operations (start, pause, complete, scrap)</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">-</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">-</td>
+</tr>
+<tr>
+<td>Record QC inspections</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">-</td>
+<td style="text-align: center;">-</td>
+<td style="text-align: center;">-</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">-</td>
+</tr>
+<tr>
+<td>Stations, reason codes, users</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">-</td>
+<td style="text-align: center;">-</td>
+<td style="text-align: center;">-</td>
+<td style="text-align: center;">-</td>
+<td style="text-align: center;">-</td>
+</tr>
+</tbody>
+</table>
+<h1 id="business-processes">Business processes</h1>
+<h2 id="end-to-end-flow">End-to-end flow</h2>
+<figure><img src="../images/diagrams/process.svg" alt="Sales order to completed work order"/><figcaption>Sales order to completed work order</figcaption></figure>
+<h3 id="1-sales-order-entry">1. Sales order entry</h3>
+<p>The planner enters the customer's purchase order as a <strong>sales order</strong> (<code>SO-yyyy-nnnnn</code>): customer, customer PO, due
+date and one line per product with quantity and legend text. The product's default specification is copied onto the
+line and can be adjusted.</p>
+<h3 id="2-work-order-generation">2. Work order generation</h3>
+<p><strong>Create work orders</strong> turns each sales order line into a Draft <strong>work order</strong> (<code>WO-yyyy-nnnnnn</code>) with the line's
+product, quantity, legend, specification and due date. The specification is a snapshot: later catalogue changes do not
+change existing work orders. Lines that already have a work order are skipped. Planners can also create work orders
+directly from a product (stock or internal jobs).</p>
+<h3 id="3-artwork-approval">3. Artwork approval</h3>
+<p>For products flagged <em>requires artwork approval</em>, the planner or operator uploads a proof (PDF or image). A planner
+approves it or rejects it with a reason. Only an approved proof allows release. A new upload supersedes the previous
+proof.</p>
+<h3 id="4-release-and-traveler">4. Release and traveler</h3>
+<p><strong>Release</strong> copies the current routing into the work order as numbered operations. The first operation becomes Ready at
+its station. The planner prints the <strong>traveler</strong>, which carries a QR code for the work order and one per operation,
+the specification and space for handwritten notes.</p>
+<h3 id="5-operations-at-stations">5. Operations at stations</h3>
+<p>At each station the operator opens the queue on the tablet, scans the traveler and:</p>
+<ul>
+<li><strong>starts</strong> the operation (the operator and start time are recorded);</li>
+<li><strong>pauses</strong> it with a reason when needed, and resumes;</li>
+<li><strong>logs scrap</strong> with a quantity and a scrap reason;</li>
+<li><strong>completes</strong> it with the good quantity. The next operation becomes Ready with that quantity as its input.</li>
+</ul>
+<h3 id="6-quality-control-and-scrap">6. Quality control and scrap</h3>
+<p>At the QC station the inspector fills in the checklist for the product type. A pass completes the inspection step and
+the job moves to packing. A fail puts the whole work order <strong>on hold</strong> with reason <code>QC-FAIL</code> so a supervisor can decide
+what to do. Scrap is captured at every station with reason codes so its causes can be analysed.</p>
+<h3 id="7-hold-resume-and-cancel">7. Hold, resume and cancel</h3>
+<p>Supervisors and planners can put a work order on hold with a hold reason (for example a customer change), resume it
+(back to its previous status) or cancel it with a reason while no step has been completed.</p>
+<h3 id="8-completion">8. Completion</h3>
+<p>Completing the last operation (packing) completes the work order; its completed quantity is the good quantity of that
+last step. The sales order shows each line's work order status.</p>
+<h2 id="work-order-lifecycle">Work order lifecycle</h2>
+<figure><img src="../images/diagrams/wo-states.png" alt="Work order status transitions"/><figcaption>Work order status transitions</figcaption></figure>
+<h2 id="operation-lifecycle">Operation lifecycle</h2>
+<figure><img src="../images/diagrams/op-states.png" alt="Operation status transitions"/><figcaption>Operation status transitions</figcaption></figure>
+<h1 id="business-rules">Business rules</h1>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Rule (as implemented)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>BR-01</td>
+<td>Numbers: work order <code>WO-{yyyy}-{nnnnnn}</code>, sales order <code>SO-{yyyy}-{nnnnn}</code>, generated by the server and safe under concurrent use.</td>
+</tr>
+<tr>
+<td>BR-02</td>
+<td>The product specification is snapshotted onto the sales order line and the work order; catalogue changes do not alter existing orders.</td>
+</tr>
+<tr>
+<td>BR-03</td>
+<td>An operation can only be started when it is Ready and its work order is Released or In progress (not On hold, Cancelled or Completed). If a station is given, it must be the routed station.</td>
+</tr>
+<tr>
+<td>BR-04</td>
+<td>The first operation is Ready at release; each next operation becomes Ready when the previous one completes.</td>
+</tr>
+<tr>
+<td>BR-05</td>
+<td>The input quantity of an operation is the good quantity of the previous one (first = work order quantity). Good plus scrap cannot exceed the input.</td>
+</tr>
+<tr>
+<td>BR-06</td>
+<td>A work order is Completed when its last operation completes; its completed quantity is the last operation's good quantity.</td>
+</tr>
+<tr>
+<td>BR-07</td>
+<td>Server UTC time is authoritative for all events; dates are displayed in plant time (Asia/Manila).</td>
+</tr>
+<tr>
+<td>BR-08</td>
+<td>Pauses and scrap require an active reason code of the matching category (Pause, Scrap). Holds require a Hold reason code; cancel requires a free-text reason.</td>
+</tr>
+<tr>
+<td>BR-09</td>
+<td>QC measured values outside [min, max] fail the item automatically; any failed item fails the inspection.</td>
+</tr>
+<tr>
+<td>BR-10</td>
+<td>A failed inspection puts the work order on hold with reason <code>QC-FAIL</code>. An inspection step can only be completed after a passed inspection.</td>
+</tr>
+<tr>
+<td>BR-11</td>
+<td>Products flagged "requires artwork approval" cannot be released without an approved proof; approving a new version supersedes the old one.</td>
+</tr>
+<tr>
+<td>BR-12</td>
+<td>Cancelling a work order is allowed only while no operation is completed. Cancelling a sales order is allowed only while it has no open work orders.</td>
+</tr>
+<tr>
+<td>BR-13</td>
+<td>Sales order lines that already have a work order cannot be changed or removed.</td>
+</tr>
+<tr>
+<td>BR-14</td>
+<td>Routing changes create a new version; released work orders keep the operations they were released with.</td>
+</tr>
+<tr>
+<td>BR-15</td>
+<td>Users are created by an administrator only; there is no self-registration and no email. New and reset passwords must be changed at the next sign-in.</td>
+</tr>
+<tr>
+<td>BR-16</td>
+<td>Every change to business data is recorded in the audit trail (who, when, what changed, correlation id).</td>
+</tr>
+<tr>
+<td>BR-17</td>
+<td>When two users edit the same record, the second save is rejected with a "changed by someone else" message instead of silently overwriting the first.</td>
+</tr>
+</tbody>
+</table>
+<h1 id="key-performance-indicators">Key performance indicators</h1>
+<table>
+<thead>
+<tr>
+<th>KPI</th>
+<th>Definition</th>
+<th>Where shown</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Work orders by status</td>
+<td>Count of work orders in Draft, Released, In progress, On hold, Completed</td>
+<td>Dashboard tiles</td>
+</tr>
+<tr>
+<td>Late work orders</td>
+<td>Open (not Completed/Cancelled) with due date before today (plant time)</td>
+<td>Dashboard tile; lists highlight late rows</td>
+</tr>
+<tr>
+<td>Completed today</td>
+<td>Work orders completed since midnight plant time</td>
+<td>Dashboard</td>
+</tr>
+<tr>
+<td>Good units today</td>
+<td>Sum of good quantity of operations completed today</td>
+<td>Dashboard</td>
+</tr>
+<tr>
+<td>Scrap units today</td>
+<td>Sum of scrap quantity logged today</td>
+<td>Dashboard</td>
+</tr>
+<tr>
+<td>Scrap rate today</td>
+<td>scrap / (good + scrap) for today, e.g. 2 / (114 + 2) = 1.7 %</td>
+<td>Dashboard</td>
+</tr>
+<tr>
+<td>WIP by station</td>
+<td>Operations Ready, In progress, Paused and Pending per station</td>
+<td>Dashboard table</td>
+</tr>
+</tbody>
+</table>
+<p>Planned KPIs for later releases: throughput per period and station, on-time delivery, at-risk jobs, scrap Pareto by
+reason, OEE-lite (availability and performance from downtime and standard minutes).</p>
+<h1 id="scope">Scope</h1>
+<h2 id="in-scope-delivered">In scope (delivered)</h2>
+<table>
+<thead>
+<tr>
+<th>Area</th>
+<th>Delivered capability</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Security</td>
+<td>Sign-in with personal accounts, forced password change, lockout, six roles, administrator-managed users</td>
+</tr>
+<tr>
+<td>Master data</td>
+<td>Products with type-specific specifications, stations, reason codes, ASME/ANSI reference data, versioned routings with editor, QC checklist templates (seeded)</td>
+</tr>
+<tr>
+<td>Orders</td>
+<td>Sales orders with lines, work order generation, work orders with specification snapshot</td>
+</tr>
+<tr>
+<td>Artwork</td>
+<td>Proof upload, approval, rejection, versioning</td>
+</tr>
+<tr>
+<td>Release</td>
+<td>Operations from routing, printable traveler with QR codes</td>
+</tr>
+<tr>
+<td>Shop floor</td>
+<td>Installable tablet app, station queue, scanning, start/pause/resume/complete, scrap, QC inspections</td>
+</tr>
+<tr>
+<td>Control</td>
+<td>Hold/resume/cancel with reason codes, automatic hold on failed QC</td>
+</tr>
+<tr>
+<td>Visibility</td>
+<td>Live dashboard and work order pages</td>
+</tr>
+<tr>
+<td>Compliance</td>
+<td>Audit trail of all changes, optimistic concurrency</td>
+</tr>
+</tbody>
+</table>
+<h2 id="out-of-scope-for-this-release-future">Out of scope for this release / future</h2>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Materials and inventory</td>
+<td>Stock levels, receipts, consumption and low-stock alerts (backlog PT-038 to PT-040, PT-049)</td>
+</tr>
+<tr>
+<td>Downtime and OEE-lite</td>
+<td>Station downtime logging and OEE-lite KPIs (PT-045, PT-046)</td>
+</tr>
+<tr>
+<td>Rework routing</td>
+<td>Failed QC currently holds the job; creating rework operations is future work</td>
+</tr>
+<tr>
+<td>Reporting</td>
+<td>Late/at-risk list, throughput and scrap Pareto charts, work order timeline, audit viewer (PT-042 to PT-044, PT-048)</td>
+</tr>
+<tr>
+<td>Traveler reprint audit</td>
+<td>Reprints are possible from the browser but not yet logged (PT-026)</td>
+</tr>
+<tr>
+<td>Badge/PIN sign-in on tablets</td>
+<td>Tablets use the normal account sign-in today (PT-011)</td>
+</tr>
+<tr>
+<td>Email notifications</td>
+<td>Not available on the free hosting plan; administrators hand out passwords</td>
+</tr>
+<tr>
+<td>ERP / accounting integration</td>
+<td>Not planned for the MVP</td>
+</tr>
+<tr>
+<td>Hosting</td>
+<td>The application currently runs locally. Deployment to the MonsterASP.NET free plan and an Azure DevOps phase 2 are documented options, not yet performed</td>
+</tr>
+</tbody>
+</table>
+<h1 id="assumptions-and-constraints">Assumptions and constraints</h1>
+<ul>
+<li>Single plant, single time zone (Asia/Manila), one shift pattern.</li>
+<li>Shop-floor devices are tablets or phones with a modern browser (Chrome or Edge recommended for camera scanning).</li>
+<li>Cost must stay at zero: free, open-source libraries (MIT or Apache licensed) and free hosting tiers only.</li>
+<li>No email or SMS is available; all notifications are in-app.</li>
+<li>All data in this practice project is fictitious.</li>
+</ul>
+<h1 id="glossary">Glossary</h1>
+<table>
+<thead>
+<tr>
+<th>Term</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Sales order (SO)</td>
+<td>A customer's order, with one line per product</td>
+</tr>
+<tr>
+<td>Work order (WO)</td>
+<td>A production job for one product and quantity</td>
+</tr>
+<tr>
+<td>Operation</td>
+<td>One step of a work order at a station (for example printing)</td>
+</tr>
+<tr>
+<td>Routing</td>
+<td>The ordered stations and standard times for a product type</td>
+</tr>
+<tr>
+<td>Traveler</td>
+<td>The printed sheet that travels with a job, carrying QR codes</td>
+</tr>
+<tr>
+<td>WIP</td>
+<td>Work in progress</td>
+</tr>
+<tr>
+<td>Scrap</td>
+<td>Units that are unusable, recorded with a reason code</td>
+</tr>
+<tr>
+<td>Hold</td>
+<td>A temporary stop of a work order with a reason</td>
+</tr>
+<tr>
+<td>QC</td>
+<td>Quality control inspection</td>
+</tr>
+<tr>
+<td>ASME A13.1</td>
+<td>US standard for pipe marker colours and sizes</td>
+</tr>
+<tr>
+<td>ANSI Z535</td>
+<td>US standard for safety sign signal words and colours</td>
+</tr>
+</tbody>
+</table></main></body></html>

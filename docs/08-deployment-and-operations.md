@@ -3,7 +3,7 @@
 > **Status:** Draft v0.3 (2026-09-26) - practice project.
 > **Hosting:** **MonsterASP.NET free plan** (US$0, no card): one IIS site on **`https://dmb-prodtrack.runasp.net`** (planned name, confirm availability at sign-up; if it is taken, record the chosen `<name>.runasp.net` here and in the GitHub variable `APP_URL`), one **1 GB MSSQL** database, EU (Germany). Environments: **Local** and **Prod** only. CI/CD: GitHub Actions, `11-github-setup.md` (Azure DevOps Phase 2: `04`). Limits, costs and sources: `03-tech-stack-and-cloud.md` section 3 and [`research/monsterasp.md`](research/monsterasp.md).
 > **Never** change any `dmbwebsolutions.com` DNS record (apex, `www` or new subdomains) and never touch the Google Cloud project `find-an-agent` from this repo. The custom domain is deferred (`03` section 7).
-> The free plan is for **learning/testing only** (ToS): fictional data only, no real DMB data, no commercial use.
+> The free plan is for **learning/testing only** (ToS): fictional data only, no real customer data, no commercial use.
 
 ---
 
@@ -204,3 +204,4 @@ See `03` section 7. For MonsterASP Premium: add the custom domain `prodtrack.dmb
 | 2026-09-26 | 0.3 | **Rewritten for the MonsterASP free plan:** Local + Prod environments, local setup, one-time MonsterASP setup, host configuration, FTP/Web Deploy deployment with `app_offline.htm`, 90-day HTTPS renewal runbook, bacpac backups and size watch, sleep/memory operations, troubleshooting, account lifecycle, custom-domain upgrade path. GCP/Azure content removed (see `03` Appendix A) |
 | 2026-09-26 | 0.3b | **GitHub Actions** replaces Azure Pipelines for delivery: `ci.yml`/`deploy.yml`/`ops.yml`, Web Deploy from `windows-latest` default (FTP alternative), manual deploy gate, repo secrets, encrypted backup artifacts, rollback by `ci_run_id` input; Azure DevOps Phase 2 |
 | 2026-09-27 | 0.4 | Section 2: implemented local defaults (LocalDB in Development settings, local dotnet-ef tool, first-run bootstrap admin and seeding, SeedDemoData, MigrateOnStartup, Dev auth mode) |
+| 2026-09-27 | 0.5 | Local run: Development applies migrations and seeds on startup (`Database:MigrateOnStartup=true`); reset with `dotnet ef database drop -f`. Production still applies the idempotent migration script from the deploy workflow (no deploy performed). |
