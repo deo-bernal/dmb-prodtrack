@@ -24,7 +24,7 @@
     <PackageVersion Include="Serilog.AspNetCore" Version="10.0.0" />
     <PackageVersion Include="Serilog.Sinks.File" Version="7.0.0" />
     <PackageVersion Include="Serilog.Formatting.Compact" Version="3.0.0" />
-    <PackageVersion Include="Swashbuckle.AspNetCore.SwaggerUI" Version="10.2.3" />
+    <PackageVersion Include="Swashbuckle.AspNetCore.SwaggerUI" Version="10.3.0" />
     <!-- ShopFloor / ApiClient / UI.Shared -->
     <PackageVersion Include="Microsoft.AspNetCore.Components.Web" Version="$(AspNetCoreVersion)" />
     <PackageVersion Include="Microsoft.AspNetCore.Components.WebAssembly" Version="$(AspNetCoreVersion)" />
